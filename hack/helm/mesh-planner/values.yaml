@@ -1,0 +1,67 @@
+# Image pull secrets for private registries.
+# Create with: kubectl create secret docker-registry regcred \
+#   --docker-server=<registry> --docker-username=<user> --docker-password=<token>
+imagePullSecrets: []
+# - name: regcred
+
+backend:
+  image:
+    registry: ghcr.io
+    repository: your-org/mesh-planner-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  service:
+    port: 8000
+  resources: {}
+  storage:
+    splatTiles:
+      size: 10Gi
+      storageClass: ""
+
+# The frontend dev server — only needed for local development.
+# In production the backend serves the built static assets directly.
+frontend:
+  enabled: false
+  image:
+    registry: ghcr.io
+    repository: your-org/mesh-planner-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  service:
+    port: 5173
+  resources: {}
+
+postgresql:
+  image:
+    registry: docker.io
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+  auth:
+    database: meshplanner
+    username: meshplanner
+    # Required. Set via --set postgresql.auth.password=<value> or a values override file.
+    password: ""
+  storage:
+    size: 5Gi
+    storageClass: ""
+
+zitadel:
+  domain: https://auth.example.com
+  # Required. Set via --set zitadel.clientId=<value> or a values override file.
+  clientId: ""
+
+ingress:
+  enabled: true
+  className: nginx
+  host: mesh.example.com
+  tls:
+    enabled: true
+    secretName: mesh-planner-tls
+    certManager:
+      enabled: true
+      clusterIssuer: letsencrypt-prod
+
+logLevel: INFO

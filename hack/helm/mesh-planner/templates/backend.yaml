@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "mesh-planner.name" . }}-splat-tiles
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "mesh-planner.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.backend.storage.splatTiles.size }}
+  {{- if .Values.backend.storage.splatTiles.storageClass }}
+  storageClassName: {{ .Values.backend.storage.splatTiles.storageClass | quote }}
+  {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mesh-planner.name" . }}-backend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "mesh-planner.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: backend
+    spec:
+      {{- include "mesh-planner.imagePullSecrets" . | nindent 6 }}
+      initContainers:
+        - name: wait-for-postgres
+          image: {{ include "mesh-planner.image" .Values.postgresql.image }}
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h {{ include "mesh-planner.name" . }}-postgres \
+                -U {{ .Values.postgresql.auth.username }}; do
+                echo "waiting for postgres..."; sleep 2;
+              done
+      containers:
+        - name: backend
+          image: {{ include "mesh-planner.image" .Values.backend.image }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.backend.service.port }}
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mesh-planner.name" . }}-secrets
+                  key: POSTGRES_PASSWORD
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://{{ .Values.postgresql.auth.username }}:$(POSTGRES_PASSWORD)@{{ include "mesh-planner.name" . }}-postgres/{{ .Values.postgresql.auth.database }}"
+            - name: ZITADEL_DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "mesh-planner.name" . }}-config
+                  key: ZITADEL_DOMAIN
+            - name: ZITADEL_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mesh-planner.name" . }}-secrets
+                  key: ZITADEL_CLIENT_ID
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "mesh-planner.name" . }}-config
+                  key: LOG_LEVEL
+          volumeMounts:
+            - name: splat-tiles
+              mountPath: /app/.splat_tiles
+          {{- if .Values.backend.resources }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /api/nodes
+              port: {{ .Values.backend.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: splat-tiles
+          persistentVolumeClaim:
+            claimName: {{ include "mesh-planner.name" . }}-splat-tiles
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mesh-planner.name" . }}-backend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "mesh-planner.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: backend
+  ports:
+    - port: {{ .Values.backend.service.port }}
+      targetPort: {{ .Values.backend.service.port }}
