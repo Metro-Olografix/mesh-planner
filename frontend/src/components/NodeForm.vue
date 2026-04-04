@@ -100,6 +100,10 @@
           <input class="form-check-input" type="radio" v-model="form.status" value="deployed" id="s-deployed" />
           <label class="form-check-label small" for="s-deployed">Deployed</label>
         </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" v-model="form.status" value="draft" id="s-draft" />
+          <label class="form-check-label small" for="s-draft">Draft <span class="text-muted">(only you)</span></label>
+        </div>
       </div>
     </div>
 
@@ -119,7 +123,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import type { HardwareProfile, MeshNode, NodeCreate, NodeEnvironment, NodeUpdate } from '../types'
+import type { HardwareProfile, MeshNode, NodeCreate, NodeEnvironment, NodeStatus, NodeUpdate } from '../types'
 
 const props = defineProps<{
   node?: MeshNode | null
@@ -146,7 +150,7 @@ const form = ref({
   sim_radius_km: 10,
   environment: 'auto' as NodeEnvironment,
   lora_preset: 'MEDIUM_FAST' as NodeCreate['lora_preset'],
-  status: 'planned' as 'planned' | 'deployed',
+  status: 'planned' as NodeStatus,
   notes: '' as string | null,
 })
 

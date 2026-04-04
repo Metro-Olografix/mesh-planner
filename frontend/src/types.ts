@@ -1,4 +1,4 @@
-export type NodeStatus = 'planned' | 'deployed'
+export type NodeStatus = 'planned' | 'deployed' | 'draft'
 
 export interface HardwareProfile {
   id: string

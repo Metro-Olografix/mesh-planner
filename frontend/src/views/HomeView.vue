@@ -172,9 +172,6 @@ function startSSE() {
       const { type, data } = JSON.parse(e.data)
       if (type === 'coverage_updated') {
         nodesStore.applyCoverageSSE(data.id, data.status)
-        if (data.status === 'completed' && !visibleCoverage.value.has(data.id)) {
-          toggleCoverage(data.id)
-        }
       } else {
         nodesStore.applySSEEvent(type, data)
         uiStore.pushActivity({ type, data, timestamp: new Date() })

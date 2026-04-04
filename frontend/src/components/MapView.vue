@@ -33,6 +33,7 @@ let markersLayer: L.LayerGroup
 let pathLayer: L.LayerGroup
 const rasterLayers = new Map<string, any>()     // id → active Leaflet layer on map
 const loadingIds = new Set<string>()             // ids currently being fetched
+const loadTokens = new Map<string, number>()    // id → generation counter for cancellation
 let hasAutoFit = false
 
 // ── Icons ───────────────────────────────────────────────────────────────────
@@ -52,6 +53,7 @@ function makeIcon(color: string) {
 
 const deployedIcon = makeIcon('#198754')   // green
 const plannedIcon  = makeIcon('#fd7e14')   // orange
+const draftIcon    = makeIcon('#6c757d')   // muted gray — creator-only draft
 const ghostIcon    = makeIcon('#9e9e9e')   // gray — pending/unsaved position
 
 // ── Lifecycle ───────────────────────────────────────────────────────────────
@@ -109,7 +111,7 @@ function renderMarkers() {
   if (!markersLayer) return
   markersLayer.clearLayers()
   for (const node of props.nodes) {
-    const icon = node.status === 'deployed' ? deployedIcon : plannedIcon
+    const icon = node.status === 'deployed' ? deployedIcon : node.status === 'planned' ? plannedIcon : draftIcon
     const marker = L.marker([node.lat, node.lon], { icon })
     marker.bindPopup(`
       <strong>${node.name}</strong><br/>
@@ -153,11 +155,12 @@ function syncCoverage() {
 
   const desired = new Set(props.visibleCoverage)
 
-  // Remove layers (and cancel pending loads) for ids no longer desired
+  // Remove layers and cancel any in-flight loads for ids no longer desired
   for (const [id, layer] of rasterLayers) {
     if (!desired.has(id)) {
       map.removeLayer(layer)
       rasterLayers.delete(id)
+      loadTokens.set(id, (loadTokens.get(id) ?? 0) + 1)
     }
   }
 
@@ -170,6 +173,8 @@ function syncCoverage() {
 }
 
 async function loadRasterLayer(id: string) {
+  const myToken = (loadTokens.get(id) ?? 0) + 1
+  loadTokens.set(id, myToken)
   loadingIds.add(id)
   try {
     const token = authStore.accessToken
@@ -179,13 +184,13 @@ async function loadRasterLayer(id: string) {
     if (!res.ok) return
     const buf = await res.arrayBuffer()
 
-    // Abort if toggled off while fetching
-    if (!props.visibleCoverage.has(id)) return
+    // Abort if a newer request superseded this one
+    if (loadTokens.get(id) !== myToken) return
 
     const gr = await parseGeoraster(buf)
 
-    // Abort if toggled off while parsing, or already added by another call
-    if (!props.visibleCoverage.has(id) || rasterLayers.has(id)) return
+    // Abort if superseded during parse, or already added by another call
+    if (loadTokens.get(id) !== myToken || rasterLayers.has(id)) return
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const layer = new GeoRasterLayer({ georaster: gr, opacity: 0.65, noDataValue: 255, resolution: 256 } as any)

@@ -50,8 +50,15 @@ async def list_nodes(db: AsyncSession = Depends(get_db), user: dict = Depends(ge
         .order_by(Node.created_at.desc())
     )
     nodes = result.scalars().all()
-    logger.info("Listed %d nodes", len(nodes))
-    return [_serialize(n) for n in nodes]
+    user_sub = user["sub"]
+    visible = [
+        n for n in nodes
+        if n.status != "draft" or n.created_by == user_sub
+    ]
+    logger.info(
+        "Listed %d nodes (%d visible to %s)", len(nodes), len(visible), user_sub
+    )
+    return [_serialize(n) for n in visible]
 
 
 @router.post("/", response_model=NodeOut, status_code=201)

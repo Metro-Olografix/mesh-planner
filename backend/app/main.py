@@ -37,6 +37,13 @@ async def lifespan(app: FastAPI):
             "ALTER TABLE nodes ADD COLUMN IF NOT EXISTS "
             "lora_preset VARCHAR NOT NULL DEFAULT 'MEDIUM_FAST'"
         ))
+        # Add 'draft' value to the nodestatus enum if it's a native PG enum
+        await conn.execute(text(
+            "DO $$ BEGIN "
+            "  ALTER TYPE nodestatus ADD VALUE IF NOT EXISTS 'draft'; "
+            "EXCEPTION WHEN undefined_object THEN NULL; "
+            "END $$"
+        ))
     async with AsyncSessionLocal() as db:
         await seed_hardware(db)
     logger.info("Ready.")

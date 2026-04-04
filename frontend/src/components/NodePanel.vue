@@ -11,6 +11,16 @@
         class="form-control form-control-sm"
         placeholder="Filter nodes…"
       />
+      <div class="d-flex gap-1 mt-1">
+        <button
+          v-for="f in statusFilters"
+          :key="f.value ?? 'all'"
+          class="btn btn-xs"
+          :class="activeFilter === f.value ? f.activeClass : 'btn-outline-secondary'"
+          style="font-size:.7rem;padding:1px 7px"
+          @click="activeFilter = activeFilter === f.value ? null : f.value"
+        >{{ f.label }}</button>
+      </div>
     </div>
 
     <!-- Node form -->
@@ -41,7 +51,7 @@
             <div class="d-flex align-items-center gap-2 mb-1">
               <span
                 class="badge"
-                :class="node.status === 'deployed' ? 'bg-success' : 'bg-warning text-dark'"
+                :class="node.status === 'deployed' ? 'bg-success' : node.status === 'planned' ? 'bg-warning text-dark' : 'bg-secondary'"
                 style="font-size:.65rem"
               >
                 {{ node.status }}
@@ -89,6 +99,7 @@
     <div class="px-3 py-2 border-top bg-light d-flex gap-3" style="font-size:.75rem">
       <span><span class="dot bg-success"></span> Deployed</span>
       <span><span class="dot bg-warning"></span> Planned</span>
+      <span><span class="dot bg-secondary"></span> Draft</span>
     </div>
   </div>
 </template>
@@ -120,14 +131,21 @@ const store = useNodesStore()
 const search = ref('')
 const showForm = ref(false)
 const editingNode = ref<MeshNode | null>(null)
+const activeFilter = ref<string | null>(null)
+
+const statusFilters = [
+  { value: null,       label: 'All',      activeClass: 'btn-dark' },
+  { value: 'planned',  label: 'Planned',  activeClass: 'btn-warning' },
+  { value: 'deployed', label: 'Deployed', activeClass: 'btn-success' },
+  { value: 'draft',    label: 'Draft',    activeClass: 'btn-secondary' },
+]
 
 const filtered = computed(() => {
   const q = search.value.toLowerCase()
-  return props.nodes.filter(n =>
-    n.name.toLowerCase().includes(q) ||
-    n.hardware.name.toLowerCase().includes(q) ||
-    n.status.includes(q)
-  )
+  return props.nodes.filter(n => {
+    if (activeFilter.value && n.status !== activeFilter.value) return false
+    return !q || n.name.toLowerCase().includes(q) || n.hardware.name.toLowerCase().includes(q)
+  })
 })
 
 function addNew() {

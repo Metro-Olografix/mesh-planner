@@ -12,6 +12,7 @@ from app.database import Base
 class NodeStatus(str, enum.Enum):
     planned = "planned"
     deployed = "deployed"
+    draft = "draft"
 
 
 class Node(Base):
