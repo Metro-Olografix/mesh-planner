@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class PathRequest(BaseModel):
     source_node_id: UUID
     destination_node_id: UUID
+    exclude_statuses: List[str] = Field(default_factory=list)
 
 
 class HopInfo(BaseModel):

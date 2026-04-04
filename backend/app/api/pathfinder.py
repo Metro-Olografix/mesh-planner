@@ -35,6 +35,16 @@ async def find_path(
     )
     nodes = result.scalars().all()
 
+    # Filter out nodes with excluded statuses, but always keep source & destination
+    if req.exclude_statuses:
+        excluded = set(req.exclude_statuses)
+        nodes = [
+            n for n in nodes
+            if n.status.value not in excluded
+            or n.id == req.source_node_id
+            or n.id == req.destination_node_id
+        ]
+
     src_node = next((n for n in nodes if n.id == req.source_node_id), None)
     dst_node = next((n for n in nodes if n.id == req.destination_node_id), None)
 
@@ -76,7 +86,7 @@ async def find_path(
         graph.append(GraphNode(
             idx=i, node_id=n.id, name=n.name,
             lat=n.lat, lon=n.lon,
-            tx_dbm=hw.tx_power_dbm, tx_gain_dbi=gain,
+            tx_dbm=hw.tx_power_dbm, tx_gain_dbi=gain, rx_gain_dbi=gain,
             rx_sensitivity_dbm=hw.rx_sensitivity_dbm, freq_mhz=hw.frequency_mhz,
             lora_preset=getattr(n, "lora_preset", "MEDIUM_FAST") or "MEDIUM_FAST",
         ))

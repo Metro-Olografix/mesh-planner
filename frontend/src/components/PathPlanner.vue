@@ -52,6 +52,23 @@
       </select>
     </div>
 
+    <!-- Status filters -->
+    <div class="mb-3">
+      <label class="form-label small mb-1 fw-semibold">Include relay nodes</label>
+      <div class="d-flex gap-3">
+        <div class="form-check form-check-inline" v-for="s in allStatuses" :key="s">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            :id="'status-' + s"
+            :value="s"
+            v-model="includedStatuses"
+          />
+          <label class="form-check-label small" :for="'status-' + s">{{ s }}</label>
+        </div>
+      </div>
+    </div>
+
     <button
       class="btn btn-primary btn-sm mb-3"
       :disabled="!sourceId || !destId || loading"
@@ -106,7 +123,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { PathResult } from '../types'
+import type { NodeStatus, PathResult } from '../types'
 import { useNodesStore } from '../stores/nodes'
 import { useAuthStore } from '../stores/auth'
 
@@ -123,6 +140,9 @@ const sourceId = ref('')
 const destId = ref('')
 const result = ref<PathResult | null>(null)
 const loading = ref(false)
+
+const allStatuses: NodeStatus[] = ['deployed', 'planned', 'draft']
+const includedStatuses = ref<NodeStatus[]>(['deployed', 'planned'])
 
 function swap() {
   const tmp = sourceId.value
@@ -151,6 +171,7 @@ async function findPath() {
       body: JSON.stringify({
         source_node_id: sourceId.value,
         destination_node_id: destId.value,
+        exclude_statuses: allStatuses.filter(s => !includedStatuses.value.includes(s)),
       }),
     })
     result.value = await res.json()

@@ -21,6 +21,7 @@ from app.models.coverage_cache import CoverageCache
 from app.models.node import Node
 from app.models.coverage_request import CoveragePredictionRequest
 from app.services.clutter import resolve_clutter_height
+from app.services.pathfinder import COVERAGE_DYNAMIC_RANGE_DB
 from app.services.splat import Splat
 from app.services.sse import sse_manager
 
@@ -74,7 +75,7 @@ async def _run_splat(node_id: UUID) -> None:
             radius=(node.sim_radius_km or 10.0) * 1000,
             colormap="plasma",
             min_dbm=hw.rx_sensitivity_dbm,
-            max_dbm=hw.rx_sensitivity_dbm + 50.0,
+            max_dbm=hw.rx_sensitivity_dbm + COVERAGE_DYNAMIC_RANGE_DB,
             high_resolution=False,
         )
 

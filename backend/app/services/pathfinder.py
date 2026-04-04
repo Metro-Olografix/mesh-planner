@@ -4,8 +4,9 @@ Pathfinder service: max-min bottleneck SNR path over the mesh node graph.
 Algorithm: modified Dijkstra that maximises the minimum-SNR hop (bottleneck).
 When SPLAT! coverage data is available for a transmitter, the terrain-attenuated
 signal level from the GeoTIFF raster is used for edge SNR.  Links are validated
-bidirectionally — both TX→RX and RX→TX must have coverage.  When no SPLAT! data
-exists, Friis free-space is used with a penalty to prefer terrain-validated hops.
+bidirectionally — both TX→RX and RX→TX must have coverage, and the edge weight
+uses the weaker of the two directions.  When no SPLAT! data exists, Friis
+free-space is used with a penalty to prefer terrain-validated hops.
 """
 from __future__ import annotations
 
@@ -32,6 +33,22 @@ LORA_PRESETS: dict[str, dict] = {
     "VERY_LONG_SLOW":  {"sf": 12, "bw_hz": 125_000},
 }
 _DEFAULT_PRESET = "MEDIUM_FAST"
+
+# Dynamic range (dB above rx_sensitivity) used when generating SPLAT! coverage
+# GeoTIFFs.  The same value MUST be used in coverage.py when building the
+# CoveragePredictionRequest so pixel↔dBm conversion stays consistent.
+COVERAGE_DYNAMIC_RANGE_DB = 50.0
+
+# Minimum required SNR (dB) per LoRa spreading factor for successful
+# demodulation (from Semtech SX1262 datasheet, Table 11-2).
+_LORA_MIN_SNR_DB: dict[int, float] = {
+    7:  -7.5,
+    8:  -10.0,
+    9:  -12.5,
+    10: -15.0,
+    11: -17.5,
+    12: -20.0,
+}
 
 
 def noise_floor_dbm(lora_preset: str = _DEFAULT_PRESET) -> float:
@@ -91,10 +108,11 @@ def _splat_pixel_to_dbm(pixel: int, rx_sensitivity_dbm: float) -> float:
     Convert a SPLAT! GeoTIFF pixel value (0–254) to received power in dBm.
 
     Coverage is generated with min_dbm = rx_sensitivity and
-    max_dbm = rx_sensitivity + 50, mapping linearly to pixels 0–254.
+    max_dbm = rx_sensitivity + COVERAGE_DYNAMIC_RANGE_DB, mapping linearly
+    to pixels 0–254.
     """
     min_dbm = rx_sensitivity_dbm
-    max_dbm = rx_sensitivity_dbm + 50.0
+    max_dbm = rx_sensitivity_dbm + COVERAGE_DYNAMIC_RANGE_DB
     return min_dbm + (pixel / 254.0) * (max_dbm - min_dbm)
 
 
@@ -107,6 +125,7 @@ class GraphNode:
     lon: float
     tx_dbm: float
     tx_gain_dbi: float
+    rx_gain_dbi: float
     rx_sensitivity_dbm: float
     freq_mhz: float
     lora_preset: str = _DEFAULT_PRESET
@@ -133,10 +152,15 @@ def build_snr_matrix(
         also fall within j's coverage raster.
 
     Edge weight (SNR in dB):
-      - When SPLAT! data exists for i: derived from the SPLAT! raster pixel
-        (terrain-attenuated received power), not Friis.
+      - When SPLAT! data exists for both directions: the minimum of
+        forward and reverse terrain-attenuated SNR (mesh needs both).
+      - When SPLAT! data exists for one direction only: that direction's
+        terrain-attenuated SNR.
       - Otherwise: Friis free-space SNR minus a penalty to discourage
         unvalidated links.
+
+    Links whose SNR falls below the LoRa demodulation threshold for the
+    receiver's spreading factor are rejected.
     """
     n = len(graph_nodes)
     matrix: List[List[Optional[float]]] = [[None] * n for _ in range(n)]
@@ -147,12 +171,12 @@ def build_snr_matrix(
             if i == j:
                 continue
             dist = haversine_m(tx.lat, tx.lon, rx.lat, rx.lon)
-            friis_rx = friis_rx_dbm(tx.tx_dbm, tx.tx_gain_dbi, rx.tx_gain_dbi, tx.freq_mhz, dist)
+            friis_rx = friis_rx_dbm(tx.tx_dbm, tx.tx_gain_dbi, rx.rx_gain_dbi, tx.freq_mhz, dist)
 
             if friis_rx <= rx.rx_sensitivity_dbm:
                 continue   # link too weak even in free space
 
-            # ── Fix 2: Bidirectional SPLAT! validation ────────────────────
+            # ── Bidirectional SPLAT! validation ──────────────────────────
             # If SPLAT! data exists for the TX node, the RX location must
             # fall within coverage.  Additionally, if SPLAT! data exists for
             # the RX node (acting as TX on the return path), the TX location
@@ -166,19 +190,41 @@ def build_snr_matrix(
                 if tx_pixel is None:
                     continue   # TX coverage says RX location is unreachable
 
+            reverse_pixel: Optional[int] = None
             if rx_cov:
                 reverse_pixel = _splat_read_pixel(rx_cov, tx.lat, tx.lon)
                 if reverse_pixel is None:
                     continue   # reverse direction blocked by terrain
 
-            # ── Fix 1: Use SPLAT! dBm for SNR when available ─────────────
+            # ── Compute SNR using terrain data when available ────────────
             nf = noise_floor_dbm(rx.lora_preset)
+
+            # Forward direction (TX → RX)
             if tx_pixel is not None:
-                splat_rx_dbm = _splat_pixel_to_dbm(tx_pixel, rx.rx_sensitivity_dbm)
-                snr = splat_rx_dbm - nf
+                fwd_rx_dbm = _splat_pixel_to_dbm(tx_pixel, rx.rx_sensitivity_dbm)
+                fwd_snr = fwd_rx_dbm - nf
             else:
-                # ── Fix 3: Penalize Friis-only (unvalidated) links ───────
-                snr = friis_rx - nf - _FRIIS_ONLY_PENALTY_DB
+                fwd_snr = friis_rx - nf - _FRIIS_ONLY_PENALTY_DB
+
+            # Reverse direction (RX → TX): use reverse SPLAT! pixel if available
+            if reverse_pixel is not None:
+                rev_rx_dbm = _splat_pixel_to_dbm(reverse_pixel, tx.rx_sensitivity_dbm)
+                rev_nf = noise_floor_dbm(tx.lora_preset)
+                rev_snr = rev_rx_dbm - rev_nf
+            else:
+                # Friis for reverse: RX node transmits, TX node receives
+                rev_friis = friis_rx_dbm(rx.tx_dbm, rx.tx_gain_dbi, tx.rx_gain_dbi, rx.freq_mhz, dist)
+                rev_nf = noise_floor_dbm(tx.lora_preset)
+                rev_snr = rev_friis - rev_nf - _FRIIS_ONLY_PENALTY_DB
+
+            # Mesh links are bidirectional — use the weaker direction
+            snr = min(fwd_snr, rev_snr)
+
+            # ── Reject links below LoRa demodulation threshold ───────────
+            rx_sf = LORA_PRESETS.get(rx.lora_preset, LORA_PRESETS[_DEFAULT_PRESET])["sf"]
+            min_snr = _LORA_MIN_SNR_DB.get(rx_sf, -20.0)
+            if snr < min_snr:
+                continue
 
             matrix[i][j] = round(snr, 2)
 
