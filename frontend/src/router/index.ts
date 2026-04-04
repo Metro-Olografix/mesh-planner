@@ -28,6 +28,11 @@ router.beforeEach(async (to) => {
     await login()
     return false
   }
+  // Populate the store before the route component mounts so token() is never
+  // null on the first API call. App.vue's onMounted init() is a no-op after this.
+  const { useAuthStore } = await import('../stores/auth')
+  const authStore = useAuthStore()
+  if (!authStore.user) authStore.setUser(user)
   return true
 })
 

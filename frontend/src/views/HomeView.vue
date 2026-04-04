@@ -80,6 +80,7 @@ import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useNodesStore } from '../stores/nodes'
 import { useUIStore } from '../stores/ui'
+import { getAccessToken } from '../auth'
 import MapView from '../components/MapView.vue'
 import NodePanel from '../components/NodePanel.vue'
 import PathPlanner from '../components/PathPlanner.vue'
@@ -137,7 +138,7 @@ onMounted(async () => {
   await Promise.all([nodesStore.fetchNodes(), nodesStore.fetchHardware()])
   // Load persisted activity history before opening the SSE stream
   try {
-    const token = authStore.accessToken
+    const token = await getAccessToken()
     const res = await fetch('/api/events/recent', {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
