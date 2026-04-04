@@ -19,10 +19,8 @@ backend:
       size: 10Gi
       storageClass: ""
 
-# The frontend dev server — only needed for local development.
-# In production the backend serves the built static assets directly.
 frontend:
-  enabled: false
+  enabled: true
   image:
     registry: ghcr.io
     repository: your-org/mesh-planner-frontend
@@ -30,7 +28,7 @@ frontend:
     pullPolicy: IfNotPresent
   replicaCount: 1
   service:
-    port: 5173
+    port: 80
   resources: {}
 
 postgresql:

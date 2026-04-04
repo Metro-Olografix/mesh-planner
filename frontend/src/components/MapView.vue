@@ -18,6 +18,7 @@ const props = defineProps<{
   pathResult: PathResult | null
   visibleCoverage: Set<string>   // node ids whose coverage overlay is shown
   pathPickMode: boolean
+  ghostPosition?: { lat: number; lon: number } | null
 }>()
 
 const emit = defineEmits<{
@@ -51,6 +52,7 @@ function makeIcon(color: string) {
 
 const deployedIcon = makeIcon('#198754')   // green
 const plannedIcon  = makeIcon('#fd7e14')   // orange
+const ghostIcon    = makeIcon('#9e9e9e')   // gray — pending/unsaved position
 
 // ── Lifecycle ───────────────────────────────────────────────────────────────
 
@@ -195,6 +197,23 @@ async function loadRasterLayer(id: string) {
     loadingIds.delete(id)
   }
 }
+
+// ── Ghost marker ─────────────────────────────────────────────────────────────
+
+let ghostMarker: L.Marker | null = null
+
+watch(() => props.ghostPosition, (pos) => {
+  if (!map) return
+  if (ghostMarker) {
+    map.removeLayer(ghostMarker)
+    ghostMarker = null
+  }
+  if (pos) {
+    ghostMarker = L.marker([pos.lat, pos.lon], { icon: ghostIcon })
+    ghostMarker.bindPopup('<em style="color:#666">New node here…</em>')
+    ghostMarker.addTo(map)
+  }
+})
 
 // ── Public API ───────────────────────────────────────────────────────────────
 

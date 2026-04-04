@@ -21,7 +21,7 @@
         :prefill-lat="prefillLat"
         :prefill-lon="prefillLon"
         @save="onSave"
-        @cancel="showForm = false"
+        @cancel="onCancel"
       />
     </div>
 
@@ -112,6 +112,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [id: string]
   toggleCoverage: [id: string]
+  cancel: []
+  saved: []
 }>()
 
 const store = useNodesStore()
@@ -133,12 +135,20 @@ function addNew() {
   showForm.value = true
 }
 
+function onCancel() {
+  const wasNew = !editingNode.value
+  showForm.value = false
+  editingNode.value = null
+  if (wasNew) emit('cancel')
+}
+
 function startEdit(node: MeshNode) {
   editingNode.value = node
   showForm.value = true
 }
 
 async function onSave(payload: NodeCreate | NodeUpdate) {
+  const wasNew = !editingNode.value
   if (editingNode.value) {
     await store.updateNode(editingNode.value.id, payload as NodeUpdate)
   } else {
@@ -146,6 +156,7 @@ async function onSave(payload: NodeCreate | NodeUpdate) {
   }
   showForm.value = false
   editingNode.value = null
+  if (wasNew) emit('saved')
 }
 
 async function remove(id: string) {

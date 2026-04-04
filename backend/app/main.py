@@ -3,8 +3,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from app.config import settings
@@ -47,18 +45,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Metro Olografix Mesh Planner",
-    description=(
-        "Collaborative Meshtastic node deployment planner"
-        " for Metro Olografix"
-    ),
+    title="Mesh Planner API",
     version="1.0.0",
     lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # tighten to your domain in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -70,16 +64,11 @@ app.include_router(coverage.router)
 app.include_router(pathfinder.router)
 app.include_router(events.router)
 
-# Serve static assets (JS, CSS, images) from the built frontend
-app.mount(
-    "/assets",
-    StaticFiles(directory="app/ui/assets"),
-    name="assets",
-)
 
-
-# SPA catch-all: any path not matched by the API or /assets returns
-# index.html so that Vue Router can handle client-side navigation.
-@app.get("/{full_path:path}", include_in_schema=False)
-async def spa_fallback(full_path: str) -> FileResponse:
-    return FileResponse("app/ui/index.html")
+@app.get("/api/config", include_in_schema=False)
+async def get_config():
+    """Public endpoint — returns frontend auth config from backend env vars."""
+    return {
+        "zitadelAuthority": settings.zitadel_domain,
+        "zitadelClientId": settings.zitadel_client_id,
+    }

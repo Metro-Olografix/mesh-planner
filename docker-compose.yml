@@ -19,9 +19,6 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-      args:
-        VITE_ZITADEL_AUTHORITY: ${VITE_ZITADEL_AUTHORITY}
-        VITE_ZITADEL_CLIENT_ID: ${VITE_ZITADEL_CLIENT_ID}
     restart: unless-stopped
     depends_on:
       db:
@@ -32,24 +29,6 @@ services:
       - splat_tiles:/app/.splat_tiles
     ports:
       - "8000:8000"
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    depends_on:
-      - backend
-    environment:
-      VITE_API_TARGET: http://backend:8000
-      VITE_ZITADEL_AUTHORITY: ${VITE_ZITADEL_AUTHORITY}
-      VITE_ZITADEL_CLIENT_ID: ${VITE_ZITADEL_CLIENT_ID}
-    volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-      - ./frontend/index.html:/app/index.html
-    ports:
-      - "5173:5173"
 
 volumes:
   pgdata:

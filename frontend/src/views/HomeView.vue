@@ -41,6 +41,8 @@
               :prefill-lon="prefillLon"
               @select="onNodeSelect"
               @toggle-coverage="toggleCoverage"
+              @cancel="ghostPosition = null"
+              @saved="ghostPosition = null"
             />
           </div>
           <div v-show="activeTab === 'path'" class="tab-panel">
@@ -67,6 +69,7 @@
           :path-result="pathResult"
           :visible-coverage="visibleCoverage"
           :path-pick-mode="pathPickMode"
+          :ghost-position="ghostPosition"
           @node-click="selectedNodeId = $event"
           @map-click="onMapClick"
         />
@@ -109,6 +112,7 @@ const pathPlannerRef = ref<InstanceType<typeof PathPlanner> | null>(null)
 const mapViewRef = ref<InstanceType<typeof MapView> | null>(null)
 const prefillLat = ref<number | undefined>()
 const prefillLon = ref<number | undefined>()
+const ghostPosition = ref<{ lat: number; lon: number } | null>(null)
 
 // Sync node coverage_status changes → jobs panel
 function nodeJobSnapshots(): Array<{ id: string; name: string; status: string | null }> {
@@ -202,9 +206,10 @@ function onMapClick(lat: number, lon: number) {
   if (activeTab.value === 'path' && pathPlannerRef.value?.isPicking()) {
     pathPlannerRef.value.onMapClick(lat, lon)
   } else if (activeTab.value === 'nodes') {
-    // Pre-fill new node position
+    // Pre-fill new node position and show ghost marker
     prefillLat.value = lat
     prefillLon.value = lon
+    ghostPosition.value = { lat, lon }
   }
 }
 </script>

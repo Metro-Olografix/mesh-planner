@@ -85,7 +85,7 @@ spec:
           {{- end }}
           readinessProbe:
             httpGet:
-              path: /api/nodes
+              path: /api/config
               port: {{ .Values.backend.service.port }}
             initialDelaySeconds: 10
             periodSeconds: 10

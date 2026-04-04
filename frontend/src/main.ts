@@ -3,8 +3,11 @@ import { createPinia } from 'pinia'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import App from './App.vue'
 import router from './router'
+import { initAuth } from './auth'
 
-const app = createApp(App)
-app.use(createPinia())
-app.use(router)
-app.mount('#app')
+initAuth().then(() => {
+  const app = createApp(App)
+  app.use(createPinia())
+  app.use(router)
+  app.mount('#app')
+})

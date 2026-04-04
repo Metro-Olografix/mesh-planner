@@ -9,6 +9,7 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # Required for SSE on /api/events
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
     {{- if .Values.ingress.tls.certManager.enabled }}
     cert-manager.io/cluster-issuer: {{ .Values.ingress.tls.certManager.clusterIssuer | quote }}
@@ -25,17 +26,18 @@ spec:
     - host: {{ .Values.ingress.host | quote }}
       http:
         paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "mesh-planner.name" . }}-backend
+                port:
+                  number: {{ .Values.backend.service.port }}
           - path: /
             pathType: Prefix
             backend:
               service:
-                {{- if .Values.frontend.enabled }}
                 name: {{ include "mesh-planner.name" . }}-frontend
                 port:
                   number: {{ .Values.frontend.service.port }}
-                {{- else }}
-                name: {{ include "mesh-planner.name" . }}-backend
-                port:
-                  number: {{ .Values.backend.service.port }}
-                {{- end }}
 {{- end }}
