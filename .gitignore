@@ -1,0 +1,10 @@
+.env
+backend/app/ui/
+frontend/node_modules/
+frontend/dist/
+splat/
+*.splat_tiles/
+__pycache__/
+*.pyc
+.DS_Store
+frontend/.pnpm-store/

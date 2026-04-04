@@ -1,0 +1,179 @@
+<template>
+  <div class="p-3 d-flex flex-column h-100">
+    <h6 class="fw-semibold mb-3">Path Planner</h6>
+
+    <p class="text-muted small mb-3">
+      Select two nodes as endpoints. The planner finds the best relay path
+      through the mesh, maximising the worst-hop SNR (bottleneck).
+      SPLAT! terrain data is used where available.
+    </p>
+
+    <!-- Node selectors -->
+    <div class="mb-2">
+      <label class="form-label small mb-1 fw-semibold text-success">Source (A)</label>
+      <select v-model="sourceId" class="form-select form-select-sm">
+        <option value="">Select node…</option>
+        <option
+          v-for="n in selectableNodes"
+          :key="n.id"
+          :value="n.id"
+          :disabled="n.id === destId"
+        >
+          {{ n.name }}
+          <template v-if="n.status === 'deployed'"> ✓</template>
+          <template v-else> (planned)</template>
+        </option>
+      </select>
+    </div>
+
+    <div class="d-flex justify-content-end mb-1">
+      <button
+        class="btn btn-outline-secondary btn-xs"
+        title="Swap source and destination"
+        style="font-size:.7rem;padding:1px 8px"
+        @click="swap"
+      >⇅ Swap</button>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label small mb-1 fw-semibold text-danger">Destination (B)</label>
+      <select v-model="destId" class="form-select form-select-sm">
+        <option value="">Select node…</option>
+        <option
+          v-for="n in selectableNodes"
+          :key="n.id"
+          :value="n.id"
+          :disabled="n.id === sourceId"
+        >
+          {{ n.name }}
+          <template v-if="n.status === 'deployed'"> ✓</template>
+          <template v-else> (planned)</template>
+        </option>
+      </select>
+    </div>
+
+    <button
+      class="btn btn-primary btn-sm mb-3"
+      :disabled="!sourceId || !destId || loading"
+      @click="findPath"
+    >
+      {{ loading ? 'Searching…' : 'Find best path' }}
+    </button>
+
+    <!-- Result -->
+    <div v-if="result" class="flex-fill overflow-auto">
+      <div v-if="result.found" class="alert alert-success py-2 small">
+        {{ result.message }}
+      </div>
+      <div v-else class="alert alert-warning py-2 small">
+        {{ result.message }}
+      </div>
+
+      <div v-if="result.found">
+        <div class="fw-semibold small mb-2">Hops ({{ result.hops.length }})</div>
+        <div
+          v-for="(hop, i) in result.hops"
+          :key="i"
+          class="d-flex align-items-center gap-2 mb-2"
+        >
+          <div
+            class="hop-badge"
+            :style="{
+              background: i === 0 ? '#198754' : i === result.hops.length - 1 ? '#dc3545' : '#0d6efd',
+            }"
+          >
+            {{ i === 0 ? 'A' : i === result.hops.length - 1 ? 'B' : `R${i}` }}
+          </div>
+          <div class="flex-fill" style="font-size:.8rem">
+            <div class="fw-semibold">{{ hop.name }}</div>
+            <div class="text-muted">{{ hop.lat.toFixed(5) }}, {{ hop.lon.toFixed(5) }}</div>
+          </div>
+          <div v-if="hop.snr_db !== null" class="small text-end" :class="snrClass(hop.snr_db)">
+            {{ hop.snr_db }} dB
+          </div>
+        </div>
+
+        <hr class="my-2" />
+        <div class="small text-muted">
+          Bottleneck SNR: <strong :class="snrClass(result.bottleneck_snr_db ?? -999)">
+            {{ result.bottleneck_snr_db }} dB
+          </strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import type { PathResult } from '../types'
+import { useNodesStore } from '../stores/nodes'
+import { useAuthStore } from '../stores/auth'
+
+const emit = defineEmits<{
+  pathFound: [result: PathResult | null]
+  pickModeChanged: [active: boolean]
+}>()
+
+const nodesStore = useNodesStore()
+const authStore = useAuthStore()
+const selectableNodes = computed(() => nodesStore.nodes)
+
+const sourceId = ref('')
+const destId = ref('')
+const result = ref<PathResult | null>(null)
+const loading = ref(false)
+
+function swap() {
+  const tmp = sourceId.value
+  sourceId.value = destId.value
+  destId.value = tmp
+  result.value = null
+}
+
+function snrClass(snr: number): string {
+  if (snr >= 10) return 'text-success'
+  if (snr >= 0) return 'text-warning'
+  return 'text-danger'
+}
+
+async function findPath() {
+  if (!sourceId.value || !destId.value) return
+  loading.value = true
+  result.value = null
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    const token = authStore.accessToken
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const res = await fetch('/api/path/find', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        source_node_id: sourceId.value,
+        destination_node_id: destId.value,
+      }),
+    })
+    result.value = await res.json()
+    emit('pathFound', result.value)
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loading.value = false
+  }
+}
+
+// No longer uses map clicks — expose stubs so HomeView doesn't break
+defineExpose({
+  onMapClick: (_lat: number, _lon: number) => {},
+  isPicking: () => false,
+})
+</script>
+
+<style scoped>
+.hop-badge {
+  width: 28px; height: 28px; border-radius: 50%;
+  color: white; font-size: .75rem; font-weight: bold;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+</style>

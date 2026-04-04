@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: splat-tiles
+  namespace: mesh-planner
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: mesh-planner
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres -U meshplanner; do
+                echo "waiting for postgres..."; sleep 2;
+              done
+      containers:
+        - name: backend
+          image: ghcr.io/your-org/mesh-planner-backend:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mesh-planner-secrets
+                  key: POSTGRES_PASSWORD
+            - name: ZITADEL_DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: mesh-planner-config
+                  key: ZITADEL_DOMAIN
+            - name: ZITADEL_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: mesh-planner-secrets
+                  key: ZITADEL_CLIENT_ID
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: mesh-planner-config
+                  key: LOG_LEVEL
+            - name: DATABASE_URL
+              value: postgresql+asyncpg://meshplanner:$(POSTGRES_PASSWORD)@postgres/meshplanner
+          volumeMounts:
+            - name: splat-tiles
+              mountPath: /app/.splat_tiles
+          readinessProbe:
+            httpGet:
+              path: /api/nodes
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: splat-tiles
+          persistentVolumeClaim:
+            claimName: splat-tiles
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: mesh-planner
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8000
+      targetPort: 8000

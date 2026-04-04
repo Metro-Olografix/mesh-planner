@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mesh-planner-config
+  namespace: mesh-planner
+data:
+  POSTGRES_DB: meshplanner
+  POSTGRES_USER: meshplanner
+  ZITADEL_DOMAIN: https://auth.example.com
+  VITE_ZITADEL_AUTHORITY: https://auth.example.com
+  LOG_LEVEL: INFO
