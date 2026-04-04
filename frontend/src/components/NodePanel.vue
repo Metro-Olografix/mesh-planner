@@ -11,13 +11,12 @@
         class="form-control form-control-sm"
         placeholder="Filter nodes…"
       />
-      <div class="d-flex gap-1 mt-1">
+      <div class="d-flex gap-1 mt-1" role="group" aria-label="Filter by status">
         <button
           v-for="f in statusFilters"
           :key="f.value ?? 'all'"
-          class="btn btn-xs"
+          class="btn btn-xs btn-filter"
           :class="activeFilter === f.value ? f.activeClass : 'btn-outline-secondary'"
-          style="font-size:.7rem;padding:1px 7px"
           @click="activeFilter = activeFilter === f.value ? null : f.value"
         >{{ f.label }}</button>
       </div>
@@ -51,10 +50,10 @@
             <div class="d-flex align-items-center gap-2 mb-1">
               <span
                 class="badge"
-                :class="node.status === 'deployed' ? 'bg-success' : node.status === 'planned' ? 'bg-warning text-dark' : 'bg-secondary'"
+                :class="node.status === 'deployed' ? 'bg-success' : node.status === 'planned' ? 'badge--planned' : 'bg-secondary'"
                 style="font-size:.65rem"
               >
-                {{ node.status }}
+                {{ node.status === 'deployed' ? '✓ deployed' : node.status === 'planned' ? '◆ planned' : '● draft' }}
               </span>
               <span class="fw-semibold text-truncate" style="font-size:.85rem">{{ node.name }}</span>
             </div>
@@ -72,9 +71,9 @@
             <button
               class="btn btn-xs"
               :class="visibleCoverage.has(node.id) ? 'btn-info' : 'btn-outline-secondary'"
-              :title="visibleCoverage.has(node.id) ? 'Hide coverage (Shift+click to invalidate & recompute)' : 'Show coverage (Shift+click to invalidate & recompute)'"
+              :title="visibleCoverage.has(node.id) ? 'Hide coverage (Shift+click to recompute)' : 'Show coverage (Shift+click to recompute)'"
+              :aria-label="coverageAriaLabel(node)"
               @click="onCoverageClick(node, $event)"
-              style="font-size:.7rem;padding:1px 6px"
             >
               {{ coverageLabel(node) }}
             </button>
@@ -84,22 +83,30 @@
               v-if="node.coverage_status === 'completed' || node.coverage_status === 'failed'"
               class="btn btn-outline-warning btn-xs"
               title="Recompute coverage"
-              style="font-size:.7rem;padding:1px 6px"
+              aria-label="Recompute coverage"
               @click="recompute(node)"
             >↺</button>
 
-            <button class="btn btn-outline-secondary btn-xs" style="font-size:.7rem;padding:1px 6px" @click="startEdit(node)">Edit</button>
-            <button class="btn btn-outline-danger btn-xs" style="font-size:.7rem;padding:1px 6px" @click="remove(node.id)">Del</button>
+            <button class="btn btn-outline-secondary btn-xs" aria-label="Edit node" @click="startEdit(node)">Edit</button>
+            <button class="btn btn-outline-danger btn-xs" aria-label="Delete node" @click="remove(node.id)">Del</button>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Legend -->
-    <div class="px-3 py-2 border-top bg-light d-flex gap-3" style="font-size:.75rem">
-      <span><span class="dot bg-success"></span> Deployed</span>
-      <span><span class="dot bg-warning"></span> Planned</span>
-      <span><span class="dot bg-secondary"></span> Draft</span>
+    <div class="px-3 py-2 border-top bg-light" style="font-size:.75rem">
+      <div class="d-flex gap-3 mb-1">
+        <span><span class="dot bg-success"></span> Deployed</span>
+        <span><span class="dot dot--planned"></span> Planned</span>
+        <span><span class="dot bg-secondary"></span> Draft</span>
+      </div>
+      <div class="d-flex gap-3 text-muted" style="font-size:.7rem">
+        <span>◉ Visible</span>
+        <span>◎ Computed</span>
+        <span>○ Not computed</span>
+        <span>⏳ Computing</span>
+      </div>
     </div>
   </div>
 </template>
@@ -109,6 +116,7 @@ import { ref, computed } from 'vue'
 import type { HardwareProfile, MeshNode, NodeCreate, NodeUpdate } from '../types'
 import NodeForm from './NodeForm.vue'
 import { useNodesStore } from '../stores/nodes'
+import { useUIStore } from '../stores/ui'
 
 const props = defineProps<{
   nodes: MeshNode[]
@@ -128,6 +136,7 @@ const emit = defineEmits<{
 }>()
 
 const store = useNodesStore()
+const uiStore = useUIStore()
 const search = ref('')
 const showForm = ref(false)
 const editingNode = ref<MeshNode | null>(null)
@@ -178,7 +187,9 @@ async function onSave(payload: NodeCreate | NodeUpdate) {
 }
 
 async function remove(id: string) {
-  if (!confirm('Delete this node?')) return
+  const node = props.nodes.find(n => n.id === id)
+  const name = node?.name ?? 'this node'
+  if (!confirm(`Delete "${name}"? Coverage data and computed paths involving this node will be lost.`)) return
   await store.deleteNode(id)
 }
 
@@ -202,11 +213,11 @@ async function onCoverageClick(node: MeshNode, event: MouseEvent) {
       pollUntilReady(node.id)
     } catch (err) {
       console.error('[coverage] triggerCoverage failed for', node.name, err)
-      alert(`Failed to trigger coverage: ${err}`)
+      uiStore.showToast(`Failed to trigger coverage: ${err}`, 'danger')
     }
   } else if (node.coverage_status === 'processing') {
     console.log('[coverage] already processing', node.name)
-    alert('Coverage is still computing, please wait…')
+    uiStore.showToast('Coverage is still computing, please wait…', 'info')
   } else {
     console.log('[coverage] toggling on', node.name, 'status=', node.coverage_status)
     emit('toggleCoverage', node.id)
@@ -216,7 +227,7 @@ async function onCoverageClick(node: MeshNode, event: MouseEvent) {
 async function recompute(node: MeshNode) {
   console.log('[coverage] recompute', node.name, 'status=', node.coverage_status)
   if (node.coverage_status === 'processing') {
-    alert('Coverage is still computing, please wait…')
+    uiStore.showToast('Coverage is still computing, please wait…', 'info')
     return
   }
   try {
@@ -225,7 +236,7 @@ async function recompute(node: MeshNode) {
     pollUntilReady(node.id)
   } catch (err) {
     console.error('[coverage] invalidateAndRecompute failed for', node.name, err)
-    alert(`Failed to recompute coverage: ${err}`)
+    uiStore.showToast(`Failed to recompute coverage: ${err}`, 'danger')
   }
 }
 
@@ -248,11 +259,11 @@ function pollUntilReady(id: string) {
       } else if (status === 'failed') {
         clearInterval(poll)
         console.error('[coverage] computation failed for', id)
-        alert('Coverage computation failed for this node')
+        uiStore.showToast('Coverage computation failed for this node', 'danger')
       } else if (attempts >= maxAttempts) {
         clearInterval(poll)
         console.error('[coverage] poll timeout for', id)
-        alert('Coverage computation timed out')
+        uiStore.showToast('Coverage computation timed out', 'warning')
       }
     } catch (err) {
       console.error('[coverage] poll error for', id, err)
@@ -262,10 +273,17 @@ function pollUntilReady(id: string) {
 }
 
 function coverageLabel(node: MeshNode): string {
-  if (props.visibleCoverage.has(node.id)) return '◉'
+  if (props.visibleCoverage.has(node.id)) return '◉ On'
   if (node.coverage_status === 'processing') return '⏳'
   if (node.coverage_status === 'completed') return '◎'
   return '○'
+}
+
+function coverageAriaLabel(node: MeshNode): string {
+  if (props.visibleCoverage.has(node.id)) return `Hide coverage for ${node.name}`
+  if (node.coverage_status === 'processing') return `Coverage computing for ${node.name}`
+  if (node.coverage_status === 'completed') return `Show coverage for ${node.name}`
+  return `Compute and show coverage for ${node.name}`
 }
 </script>
 
@@ -274,5 +292,8 @@ function coverageLabel(node: MeshNode): string {
 .node-item:hover { background: #f8f9fa; }
 .node-item--active { background: #e7f3ff; }
 .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:4px; }
-.btn-xs { line-height:1.2; }
+.dot--planned { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:4px; background:#e67e00; }
+.btn-xs { line-height:1.2; font-size:.72rem; padding:3px 8px; min-height:28px; }
+.btn-filter { font-size:.7rem; padding:2px 8px; }
+.badge--planned { background-color:#e67e00; color:#fff; }
 </style>

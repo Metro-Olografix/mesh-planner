@@ -3,12 +3,12 @@
     <h6 class="mb-3 fw-semibold">{{ isEdit ? 'Edit node' : 'Add node' }}</h6>
 
     <div class="mb-2">
-      <label class="form-label small mb-1">Name</label>
+      <label class="form-label small mb-1">Name <span class="text-danger">*</span></label>
       <input v-model="form.name" class="form-control form-control-sm" required />
     </div>
 
     <div class="mb-2">
-      <label class="form-label small mb-1">Hardware</label>
+      <label class="form-label small mb-1">Hardware <span class="text-danger">*</span></label>
       <select v-model="form.hardware_id" class="form-select form-select-sm" required @change="onHardwareChange">
         <option value="" disabled>Select hardware…</option>
         <option v-for="hw in hardware" :key="hw.id" :value="hw.id">
@@ -24,18 +24,18 @@
 
     <div class="row g-2 mb-2">
       <div class="col">
-        <label class="form-label small mb-1">Latitude</label>
-        <input v-model.number="form.lat" type="number" step="any" class="form-control form-control-sm" required />
+        <label class="form-label small mb-1">Latitude <span class="text-danger">*</span></label>
+        <input v-model.number="form.lat" type="number" step="any" min="-90" max="90" class="form-control form-control-sm" required placeholder="Click map to set" />
       </div>
       <div class="col">
-        <label class="form-label small mb-1">Longitude</label>
-        <input v-model.number="form.lon" type="number" step="any" class="form-control form-control-sm" required />
+        <label class="form-label small mb-1">Longitude <span class="text-danger">*</span></label>
+        <input v-model.number="form.lon" type="number" step="any" min="-180" max="180" class="form-control form-control-sm" required placeholder="Click map to set" />
       </div>
     </div>
 
     <div class="row g-2 mb-2">
       <div class="col">
-        <label class="form-label small mb-1">Height AGL (m)</label>
+        <label class="form-label small mb-1">Height AGL (m) <span class="text-danger">*</span></label>
         <input v-model.number="form.height_m" type="number" step="0.1" min="0.1" class="form-control form-control-sm" required />
       </div>
       <div class="col">
@@ -89,8 +89,8 @@
       <div class="text-muted" style="font-size:.72rem">Larger radius = longer computation time</div>
     </div>
 
-    <div class="mb-2">
-      <label class="form-label small mb-1">Status</label>
+    <fieldset class="mb-2">
+      <legend class="form-label small mb-1 fw-normal">Status</legend>
       <div class="d-flex gap-3">
         <div class="form-check">
           <input class="form-check-input" type="radio" v-model="form.status" value="planned" id="s-planned" />
@@ -102,10 +102,13 @@
         </div>
         <div class="form-check">
           <input class="form-check-input" type="radio" v-model="form.status" value="draft" id="s-draft" />
-          <label class="form-check-label small" for="s-draft">Draft <span class="text-muted">(only you)</span></label>
+          <label class="form-check-label small" for="s-draft">Draft</label>
         </div>
       </div>
-    </div>
+      <div v-if="form.status === 'draft'" class="text-muted" style="font-size:.72rem;margin-top:2px">
+        Draft nodes are visible only to you and excluded from others' path planning.
+      </div>
+    </fieldset>
 
     <div class="mb-3">
       <label class="form-label small mb-1">Notes</label>

@@ -112,7 +112,7 @@ function renderMarkers() {
   markersLayer.clearLayers()
   for (const node of props.nodes) {
     const icon = node.status === 'deployed' ? deployedIcon : node.status === 'planned' ? plannedIcon : draftIcon
-    const marker = L.marker([node.lat, node.lon], { icon })
+    const marker = L.marker([node.lat, node.lon], { icon, alt: `${node.name} (${node.status})` })
     marker.bindPopup(`
       <strong>${node.name}</strong><br/>
       ${node.hardware.name}<br/>
@@ -215,7 +215,7 @@ watch(() => props.ghostPosition, (pos) => {
   }
   if (pos) {
     ghostMarker = L.marker([pos.lat, pos.lon], { icon: ghostIcon })
-    ghostMarker.bindPopup('<em style="color:#666">New node here…</em>')
+    ghostMarker.bindPopup(`<strong style="color:#333">New node here</strong><br/><small style="color:#666">${pos.lat.toFixed(5)}, ${pos.lon.toFixed(5)}</small>`)
     ghostMarker.addTo(map)
   }
 })

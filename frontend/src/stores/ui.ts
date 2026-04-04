@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { ActivityEvent, CoverageJob, JobStatus } from '../types'
+import type { ActivityEvent, CoverageJob, JobStatus, Toast, ToastType } from '../types'
 
 export const useUIStore = defineStore('ui', () => {
   const sidebarTab = ref<'nodes' | 'path' | 'activity' | 'jobs'>('nodes')
@@ -8,6 +8,8 @@ export const useUIStore = defineStore('ui', () => {
   const showNodeForm = ref(false)
   const activity = ref<ActivityEvent[]>([])
   const jobs = ref<CoverageJob[]>([])
+  const toasts = ref<Toast[]>([])
+  let toastId = 0
 
   function pushActivity(event: ActivityEvent) {
     activity.value.unshift(event)
@@ -34,5 +36,17 @@ export const useUIStore = defineStore('ui', () => {
     }
   }
 
-  return { sidebarTab, editingNodeId, showNodeForm, activity, jobs, pushActivity, upsertJob }
+  function showToast(message: string, type: ToastType = 'info') {
+    const id = ++toastId
+    toasts.value.push({ id, message, type })
+    setTimeout(() => {
+      toasts.value = toasts.value.filter(t => t.id !== id)
+    }, 5000)
+  }
+
+  function dismissToast(id: number) {
+    toasts.value = toasts.value.filter(t => t.id !== id)
+  }
+
+  return { sidebarTab, editingNodeId, showNodeForm, activity, jobs, toasts, pushActivity, upsertJob, showToast, dismissToast }
 })

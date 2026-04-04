@@ -1,7 +1,11 @@
 <template>
   <div class="p-3 d-flex flex-column h-100">
     <h6 class="fw-semibold mb-3">Activity Feed</h6>
-    <div v-if="activity.length === 0" class="text-muted small">No recent activity</div>
+    <div v-if="activity.length === 0" class="text-muted small text-center py-4">
+      <div style="font-size:1.5rem;margin-bottom:4px">--</div>
+      No recent activity<br/>
+      <span style="font-size:.72rem">Create or update a node to see events here.</span>
+    </div>
     <div class="flex-fill overflow-auto">
       <div
         v-for="(ev, i) in activity"
@@ -37,8 +41,8 @@ function actionText(type: ActivityEvent['type']): string {
   return type === 'node_created' ? ' added ' : type === 'node_updated' ? ' updated ' : ' deleted '
 }
 function formatTime(d: Date): string {
-  return d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }) +
-    ' ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' }) +
+    ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
 }
 </script>
 

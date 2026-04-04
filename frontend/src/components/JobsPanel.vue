@@ -12,7 +12,11 @@
       </button>
     </div>
 
-    <div v-if="jobs.length === 0" class="text-muted small">No coverage jobs yet</div>
+    <div v-if="jobs.length === 0" class="text-muted small text-center py-4">
+      <div style="font-size:1.5rem;margin-bottom:4px">--</div>
+      No coverage jobs yet<br/>
+      <span style="font-size:.72rem">Click a node's coverage button to start a computation.</span>
+    </div>
 
     <div class="flex-fill overflow-auto">
       <div
@@ -57,10 +61,12 @@
 import { ref } from 'vue'
 import type { CoverageJob, JobStatus } from '../types'
 import { useNodesStore } from '../stores/nodes'
+import { useUIStore } from '../stores/ui'
 
 defineProps<{ jobs: CoverageJob[] }>()
 
 const nodesStore = useNodesStore()
+const uiStore = useUIStore()
 const recomputingAll = ref(false)
 
 async function triggerRecomputeAll() {
@@ -68,9 +74,9 @@ async function triggerRecomputeAll() {
   recomputingAll.value = true
   try {
     const result = await nodesStore.recomputeAll()
-    alert(`Queued coverage recomputation for ${result.nodes_queued} node(s).`)
+    uiStore.showToast(`Queued coverage recomputation for ${result.nodes_queued} node(s).`, 'success')
   } catch (e) {
-    alert(`Failed to trigger recompute all: ${e}`)
+    uiStore.showToast(`Failed to trigger recompute all: ${e}`, 'danger')
   } finally {
     recomputingAll.value = false
   }
@@ -97,8 +103,8 @@ function badgeClass(status: JobStatus): string {
 }
 
 function formatTime(d: Date): string {
-  return d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }) +
-    ' ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' }) +
+    ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
 }
 </script>
 

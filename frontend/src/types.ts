@@ -93,6 +93,14 @@ export interface ActivityEvent {
   timestamp: Date
 }
 
+export type ToastType = 'success' | 'warning' | 'danger' | 'info'
+
+export interface Toast {
+  id: number
+  message: string
+  type: ToastType
+}
+
 export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed'
 
 export interface CoverageJob {

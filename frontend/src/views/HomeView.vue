@@ -2,24 +2,34 @@
   <div class="app-layout">
     <!-- Top navbar -->
     <nav class="navbar navbar-dark bg-dark px-3 py-2 d-flex align-items-center" style="height:48px">
-      <span class="navbar-brand mb-0 fw-bold" style="font-size:.95rem">
-        📡 Metro Olografix — Mesh Planner
-      </span>
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-secondary btn-sm d-md-none sidebar-toggle" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle sidebar">
+          ☰
+        </button>
+        <span class="navbar-brand mb-0 fw-bold" style="font-size:.95rem">
+          📡 <span class="d-none d-sm-inline">Metro Olografix —</span> Mesh Planner
+        </span>
+      </div>
       <div class="ms-auto d-flex align-items-center gap-3">
-        <span class="text-secondary small">{{ username }}</span>
+        <span class="text-secondary small d-none d-sm-inline">{{ username }}</span>
         <button class="btn btn-outline-secondary btn-sm" @click="authStore.logout()">Logout</button>
       </div>
     </nav>
 
     <!-- Body: sidebar + map -->
     <div class="app-body">
+      <!-- Sidebar overlay (mobile) -->
+      <div v-if="sidebarOpen" class="sidebar-overlay d-md-none" @click="sidebarOpen = false"></div>
       <!-- Sidebar -->
-      <aside class="sidebar border-end bg-white">
+      <aside class="sidebar border-end bg-white" :class="{ 'sidebar--open': sidebarOpen }">
         <!-- Tab bar -->
-        <div class="d-flex border-bottom" style="height:40px">
+        <div class="d-flex border-bottom" style="height:40px" role="tablist" aria-label="Sidebar panels">
           <button
             v-for="tab in tabs"
             :key="tab.id"
+            role="tab"
+            :aria-selected="activeTab === tab.id"
+            :aria-controls="`panel-${tab.id}`"
             class="flex-fill btn btn-sm rounded-0 border-0"
             :class="activeTab === tab.id ? 'bg-light fw-semibold border-bottom border-primary border-2' : 'text-muted'"
             @click="activeTab = tab.id"
@@ -30,7 +40,7 @@
 
         <!-- Tab content: position:relative + absolute panels prevents overflow into the tab bar -->
         <div class="flex-fill" style="position:relative; overflow:hidden;">
-          <div v-show="activeTab === 'nodes'" class="tab-panel">
+          <div v-show="activeTab === 'nodes'" id="panel-nodes" role="tabpanel" class="tab-panel">
             <NodePanel
               :nodes="nodesStore.nodes"
               :hardware="nodesStore.hardware"
@@ -45,17 +55,17 @@
               @saved="ghostPosition = null"
             />
           </div>
-          <div v-show="activeTab === 'path'" class="tab-panel">
+          <div v-show="activeTab === 'path'" id="panel-path" role="tabpanel" class="tab-panel">
             <PathPlanner
               ref="pathPlannerRef"
               @path-found="pathResult = $event"
               @pick-mode-changed="pathPickMode = $event"
             />
           </div>
-          <div v-show="activeTab === 'activity'" class="tab-panel">
+          <div v-show="activeTab === 'activity'" id="panel-activity" role="tabpanel" class="tab-panel">
             <ActivityFeed :activity="uiStore.activity" />
           </div>
-          <div v-show="activeTab === 'jobs'" class="tab-panel">
+          <div v-show="activeTab === 'jobs'" id="panel-jobs" role="tabpanel" class="tab-panel">
             <JobsPanel :jobs="uiStore.jobs" />
           </div>
         </div>
@@ -113,6 +123,7 @@ const mapViewRef = ref<InstanceType<typeof MapView> | null>(null)
 const prefillLat = ref<number | undefined>()
 const prefillLon = ref<number | undefined>()
 const ghostPosition = ref<{ lat: number; lon: number } | null>(null)
+const sidebarOpen = ref(false)
 
 // Sync node coverage_status changes → jobs panel
 function nodeJobSnapshots(): Array<{ id: string; name: string; status: string | null }> {
@@ -222,6 +233,7 @@ function onMapClick(lat: number, lon: number) {
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 .sidebar {
   width: 320px;
@@ -234,7 +246,6 @@ function onMapClick(lat: number, lon: number) {
   flex: 1;
   overflow: hidden;
 }
-/* Each tab panel fills the content area exactly — nothing can overflow into the tab bar */
 .tab-panel {
   position: absolute;
   inset: 0;
@@ -242,5 +253,34 @@ function onMapClick(lat: number, lon: number) {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
+}
+.sidebar-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 999;
+}
+.sidebar-toggle {
+  font-size: 1.1rem;
+  padding: 2px 8px;
+  line-height: 1;
+}
+
+/* Mobile: sidebar slides over the map */
+@media (max-width: 767.98px) {
+  .sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform .2s ease;
+    box-shadow: 2px 0 8px rgba(0,0,0,.15);
+    width: 300px;
+  }
+  .sidebar--open {
+    transform: translateX(0);
+  }
 }
 </style>

@@ -28,9 +28,10 @@
 
     <div class="d-flex justify-content-end mb-1">
       <button
-        class="btn btn-outline-secondary btn-xs"
+        class="btn btn-outline-secondary btn-sm"
         title="Swap source and destination"
-        style="font-size:.7rem;padding:1px 8px"
+        aria-label="Swap source and destination"
+        style="font-size:.75rem;padding:3px 10px"
         @click="swap"
       >⇅ Swap</button>
     </div>
@@ -74,6 +75,7 @@
       :disabled="!sourceId || !destId || loading"
       @click="findPath"
     >
+      <span v-if="loading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
       {{ loading ? 'Searching…' : 'Find best path' }}
     </button>
 
@@ -116,6 +118,19 @@
             {{ result.bottleneck_snr_db }} dB
           </strong>
         </div>
+        <div v-if="result.bottleneck_snr_db !== null && result.bottleneck_snr_db < 10" class="small text-warning mt-1">
+          Low bottleneck SNR — consider adding relay nodes.
+        </div>
+      </div>
+    </div>
+
+    <!-- SNR legend -->
+    <div class="mt-auto pt-2 border-top small text-muted" style="font-size:.72rem">
+      <div class="fw-semibold mb-1">SNR quality</div>
+      <div class="d-flex gap-3">
+        <span class="text-success">&#9679; &ge;10 dB good</span>
+        <span style="color:#e67e00">&#9679; 0–10 dB marginal</span>
+        <span class="text-danger">&#9679; &lt;0 dB poor</span>
       </div>
     </div>
   </div>
@@ -126,6 +141,7 @@ import { ref, computed } from 'vue'
 import type { NodeStatus, PathResult } from '../types'
 import { useNodesStore } from '../stores/nodes'
 import { useAuthStore } from '../stores/auth'
+import { useUIStore } from '../stores/ui'
 
 const emit = defineEmits<{
   pathFound: [result: PathResult | null]
@@ -134,6 +150,7 @@ const emit = defineEmits<{
 
 const nodesStore = useNodesStore()
 const authStore = useAuthStore()
+const uiStore = useUIStore()
 const selectableNodes = computed(() => nodesStore.nodes)
 
 const sourceId = ref('')
@@ -153,7 +170,7 @@ function swap() {
 
 function snrClass(snr: number): string {
   if (snr >= 10) return 'text-success'
-  if (snr >= 0) return 'text-warning'
+  if (snr >= 0) return 'snr-marginal'
   return 'text-danger'
 }
 
@@ -178,6 +195,7 @@ async function findPath() {
     emit('pathFound', result.value)
   } catch (e) {
     console.error(e)
+    uiStore.showToast('Failed to find path. Please try again.', 'danger')
   } finally {
     loading.value = false
   }
@@ -197,4 +215,5 @@ defineExpose({
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
+.snr-marginal { color: #e67e00; }
 </style>
