@@ -79,6 +79,14 @@
       {{ loading ? 'Searching…' : 'Find best path' }}
     </button>
 
+    <button
+      v-if="result"
+      class="btn btn-outline-secondary btn-sm mb-3"
+      @click="clearResult"
+    >
+      Clear result
+    </button>
+
     <!-- Result -->
     <div v-if="result" class="flex-fill overflow-auto">
       <div v-if="result.found" class="alert alert-success py-2 small">
@@ -166,6 +174,13 @@ function swap() {
   sourceId.value = destId.value
   destId.value = tmp
   result.value = null
+}
+
+function clearResult() {
+  result.value = null
+  sourceId.value = ''
+  destId.value = ''
+  emit('pathFound', null)
 }
 
 function snrClass(snr: number): string {

@@ -66,29 +66,35 @@
           </div>
 
           <!-- Actions -->
-          <div class="d-flex flex-column gap-1 ms-1" @click.stop>
-            <!-- Coverage toggle -->
+          <div class="node-actions" @click.stop>
             <button
-              class="btn btn-xs"
-              :class="visibleCoverage.has(node.id) ? 'btn-info' : 'btn-outline-secondary'"
-              :title="visibleCoverage.has(node.id) ? 'Hide coverage (Shift+click to recompute)' : 'Show coverage (Shift+click to recompute)'"
+              class="action-btn coverage-btn"
+              :class="{ 'coverage-btn--active': visibleCoverage.has(node.id) }"
+              :title="visibleCoverage.has(node.id) ? 'Hide coverage' : 'Show coverage'"
               :aria-label="coverageAriaLabel(node)"
               @click="onCoverageClick(node, $event)"
             >
               {{ coverageLabel(node) }}
             </button>
 
-            <!-- Recompute button: visible when coverage exists -->
-            <button
-              v-if="node.coverage_status === 'completed' || node.coverage_status === 'failed'"
-              class="btn btn-outline-warning btn-xs"
-              title="Recompute coverage"
-              aria-label="Recompute coverage"
-              @click="recompute(node)"
-            >↺</button>
-
-            <button class="btn btn-outline-secondary btn-xs" aria-label="Edit node" @click="startEdit(node)">Edit</button>
-            <button class="btn btn-outline-danger btn-xs" aria-label="Delete node" @click="remove(node.id)">Del</button>
+            <div class="menu-wrap">
+              <button
+                class="action-btn menu-trigger"
+                aria-label="More actions"
+                @click="openMenu = openMenu === node.id ? null : node.id"
+              >⋮</button>
+              <Transition name="menu-fade">
+                <div v-if="openMenu === node.id" v-click-outside="() => openMenu = null" class="action-menu">
+                  <button class="action-menu-item" @click="startEdit(node); openMenu = null">Edit</button>
+                  <button
+                    v-if="node.coverage_status === 'completed' || node.coverage_status === 'failed'"
+                    class="action-menu-item"
+                    @click="recompute(node); openMenu = null"
+                  >Recompute coverage</button>
+                  <button class="action-menu-item action-menu-item--danger" @click="remove(node.id); openMenu = null">Delete</button>
+                </div>
+              </Transition>
+            </div>
           </div>
         </div>
       </div>
@@ -96,11 +102,6 @@
 
     <!-- Legend -->
     <div class="px-3 py-2 border-top bg-light" style="font-size:.75rem">
-      <div class="d-flex gap-3 mb-1">
-        <span><span class="dot bg-success"></span> Deployed</span>
-        <span><span class="dot dot--planned"></span> Planned</span>
-        <span><span class="dot bg-secondary"></span> Draft</span>
-      </div>
       <div class="d-flex gap-3 text-muted" style="font-size:.7rem">
         <span>◉ Visible</span>
         <span>◎ Computed</span>
@@ -112,11 +113,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, type Directive } from 'vue'
 import type { HardwareProfile, MeshNode, NodeCreate, NodeUpdate } from '../types'
 import NodeForm from './NodeForm.vue'
 import { useNodesStore } from '../stores/nodes'
 import { useUIStore } from '../stores/ui'
+
+// Click-outside directive for closing the dropdown
+const vClickOutside: Directive = {
+  mounted(el, binding) {
+    (el as any).__clickOutside = (e: Event) => {
+      if (!el.contains(e.target as Node)) binding.value()
+    }
+    setTimeout(() => document.addEventListener('click', (el as any).__clickOutside), 0)
+  },
+  unmounted(el) {
+    document.removeEventListener('click', (el as any).__clickOutside)
+  },
+}
 
 const props = defineProps<{
   nodes: MeshNode[]
@@ -141,6 +155,7 @@ const search = ref('')
 const showForm = ref(false)
 const editingNode = ref<MeshNode | null>(null)
 const activeFilter = ref<string | null>(null)
+const openMenu = ref<string | null>(null)
 
 const statusFilters = [
   { value: null,       label: 'All',      activeClass: 'btn-dark' },
@@ -288,7 +303,7 @@ function coverageAriaLabel(node: MeshNode): string {
 </script>
 
 <style scoped>
-.node-item { cursor: pointer; transition: background .1s; }
+.node-item { cursor: pointer; transition: background .15s; }
 .node-item:hover { background: #f8f9fa; }
 .node-item--active { background: #e7f3ff; }
 .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:4px; }
@@ -296,4 +311,100 @@ function coverageAriaLabel(node: MeshNode): string {
 .btn-xs { line-height:1.2; font-size:.72rem; padding:3px 8px; min-height:28px; }
 .btn-filter { font-size:.7rem; padding:2px 8px; }
 .badge--planned { background-color:#e67e00; color:#fff; }
+
+/* ── Node actions ─────────────────────────────────────────── */
+.node-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: #fff;
+  color: #495057;
+  font-size: .72rem;
+  padding: 3px 8px;
+  min-height: 28px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.action-btn:hover {
+  background: #f0f0f0;
+  border-color: #adb5bd;
+}
+.coverage-btn--active {
+  background: #0dcaf0;
+  border-color: #0dcaf0;
+  color: #fff;
+}
+.coverage-btn--active:hover {
+  background: #31d2f2;
+  border-color: #31d2f2;
+}
+.menu-wrap {
+  position: relative;
+}
+.menu-trigger {
+  font-weight: bold;
+  letter-spacing: 1px;
+  padding: 3px 6px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: .9rem;
+}
+.menu-trigger:hover {
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+}
+.action-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 50;
+  min-width: 160px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+}
+.action-menu-item {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 7px 14px;
+  font-size: .8rem;
+  color: #374151;
+  cursor: pointer;
+  transition: background .1s;
+}
+.action-menu-item:hover {
+  background: #f3f4f6;
+}
+.action-menu-item--danger {
+  color: #dc3545;
+}
+.action-menu-item--danger:hover {
+  background: #fef2f2;
+}
+
+/* Dropdown transition */
+.menu-fade-enter-active,
+.menu-fade-leave-active {
+  transition: opacity .12s ease, transform .12s ease;
+}
+.menu-fade-enter-from,
+.menu-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
 </style>

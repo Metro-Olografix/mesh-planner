@@ -199,6 +199,8 @@ function toggleCoverage(id: string) {
   if (visibleCoverage.value.has(id)) {
     visibleCoverage.value.delete(id)
   } else {
+    // Exclusive: clear any other active coverage first
+    visibleCoverage.value.clear()
     visibleCoverage.value.add(id)
   }
   // force reactivity
@@ -273,7 +275,7 @@ function onMapClick(lat: number, lon: number) {
     top: 0;
     left: 0;
     bottom: 0;
-    z-index: 1000;
+    z-index: 1001;
     transform: translateX(-100%);
     transition: transform .2s ease;
     box-shadow: 2px 0 8px rgba(0,0,0,.15);
