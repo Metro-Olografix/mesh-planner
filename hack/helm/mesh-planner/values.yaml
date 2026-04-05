@@ -4,6 +4,10 @@
 imagePullSecrets: []
 # - name: regcred
 
+publicAccess:
+  enabled: false
+  # If true, the homepage will show the map hiding sensitive information. Read-only access.
+
 backend:
   image:
     registry: ghcr.io

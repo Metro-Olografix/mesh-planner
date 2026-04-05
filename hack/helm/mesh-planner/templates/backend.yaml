@@ -95,6 +95,8 @@ spec:
                 configMapKeyRef:
                   name: {{ include "mesh-planner.name" . }}-config
                   key: LOG_LEVEL
+            - name: PUBLIC_ACCESS
+              value: {{ .Values.publicAccess.enabled | quote }}
           volumeMounts:
             - name: splat-tiles
               mountPath: /app/.splat_tiles
