@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { getUser } from '../auth'
+import { getUser, isPublicAccessEnabled } from '../auth'
 import HomeView from '../views/HomeView.vue'
 import CallbackView from '../views/CallbackView.vue'
 
@@ -24,6 +24,10 @@ router.beforeEach(async (to) => {
   if (!to.meta.requiresAuth) return true
   const user = await getUser()
   if (!user || user.expired) {
+    if (isPublicAccessEnabled()) {
+      // Allow unauthenticated through — components will render in read-only mode
+      return true
+    }
     const { login } = await import('../auth')
     await login()
     return false

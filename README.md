@@ -14,7 +14,7 @@ A professional, collaborative **Meshtastic node deployment planner** for the Met
 | **🏙️ Auto-Clutter** | Industry-standard **ESA WorldCover 2021** (10m) land-cover data for automatic obstacle height estimation. |
 | **🛣️ Max-SNR Pathfinder** | Intelligent A→B routing that maximizes the bottleneck SNR across the best possible relay hops. |
 | **🔄 Collaboration** | Live **Activity Feed** and instant **SSE** synchronization for all connected members. |
-| **🛡️ Privacy & Auth** | Zitadel OAuth2 integration. Draft nodes are only visible to the creator until made public. |
+| **🛡️ Auth & Privacy** | OIDC/OAuth2 with PKCE (any provider). Optional public read-only view with coordinate fuzzing. |
 | **⚙️ Job Queue** | Asynchronous rendering system with progress tracking and one-click global recomputes. |
 
 ---
@@ -65,21 +65,99 @@ graph TD
 
 ### 1. Requirements
 - **Docker** & **Docker Compose v2**
-- A **Zitadel** instance (configured for JWT tokens and PKCE)
+- An **OIDC-compliant identity provider** (Zitadel, Keycloak, Auth0, Okta, etc.)
 
 ### 2. Configuration
 1. Clone the repository and copy the env file:
    ```bash
    cp .env.example .env
    ```
-2. Configure your `ZITADEL_DOMAIN` and `ZITADEL_CLIENT_ID`.
+2. Edit `.env` and fill in the required values (see [Configuration Reference](#configuration-reference) below).
 
 ### 3. Launch
+
+**Production** (built frontend served by nginx):
 ```bash
-docker compose up -d
+docker compose --profile prod up -d
 ```
-- **Frontend**: Available at `http://localhost:8080`.
-- **Backend API**: Exposed at `http://localhost:8000`.
+- Frontend: `http://localhost:8080`
+- Backend API: `http://localhost:8000`
+
+**Development** (Vite dev server with HMR):
+```bash
+docker compose --profile dev up
+```
+- Frontend dev server with hot reload: `http://localhost:5173`
+- Backend API: `http://localhost:8000`
+
+---
+
+## 🔐 Authentication
+
+Authentication uses the **OpenID Connect (OIDC) Authorization Code + PKCE** flow and works with any standards-compliant identity provider.
+
+### Setting up your IdP
+
+Create a **Single Page Application** (public client) in your IdP with:
+- **Redirect URI**: `https://your-domain/callback`
+- **Post-logout redirect URI**: `https://your-domain/`
+- **Grant type**: Authorization Code
+- **Scopes**: `openid profile email`
+
+No client secret is needed (PKCE public client).
+
+### Zitadel-specific notes
+Zitadel places a project resource ID in the JWT `aud` claim rather than the OAuth client ID. Leave `OIDC_AUDIENCE` empty — the backend skips audience verification in this case, relying on signature + issuer + expiry checks instead.
+
+For all other providers (Auth0, Okta, Keycloak), set `OIDC_AUDIENCE` to your API audience or client ID as required by the provider.
+
+---
+
+## 🌐 Public Read-Only Mode
+
+When `PUBLIC_ACCESS=true`, unauthenticated visitors can view the map without logging in:
+
+| What they see | What is hidden |
+|---|---|
+| Node names, statuses, hardware type | Exact coordinates (fuzzed ±500 m) |
+| Live SSE updates | Notes, creator identity |
+| Activity feed (anonymised) | Coverage GeoTIFF overlays |
+| — | Path planner |
+
+Coordinates are fuzzed **server-side** using a deterministic algorithm (djb2 hash of the node ID), so the real position is never transmitted to unauthenticated clients. The same algorithm is used client-side for the authenticated privacy-mode toggle, so markers appear at the same fuzzed position in both cases.
+
+Authenticated users retain full access regardless of this setting.
+
+---
+
+## 🎨 Custom Branding
+
+Drop files into the `custom/` directory at the project root to override the default logo and favicon. No rebuild is required — the backend detects them at startup and serves them at runtime.
+
+| File | Description |
+|---|---|
+| `custom/logo.png` (or `.svg`, `.webp`, `.jpg`) | Replaces the 📡 emoji in the navbar |
+| `custom/favicon.ico` (or `.png`, `.svg`) | Replaces the browser tab icon |
+
+The `custom/` directory is bind-mounted read-only into the backend container. To update assets, replace the files and restart the backend.
+
+---
+
+## ⚙️ Configuration Reference
+
+All settings are read from `.env` (copied from `.env.example`).
+
+| Variable | Required | Description |
+|---|---|---|
+| `POSTGRES_PASSWORD` | ✅ | PostgreSQL database password |
+| `OIDC_ISSUER` | ✅ | OIDC provider base URL, e.g. `https://auth.example.com` (no trailing slash) |
+| `OIDC_CLIENT_ID` | ✅ | OAuth client ID of the SPA application |
+| `OIDC_AUDIENCE` | — | Enforce `aud` claim verification (leave empty for Zitadel) |
+| `PUBLIC_ACCESS` | — | `true` to allow unauthenticated read-only access (default: `false`) |
+| `LOG_LEVEL` | — | `DEBUG` / `INFO` / `WARNING` / `ERROR` (default: `INFO`) |
+| `SPLAT_PATH` | — | Path to SPLAT! binaries (default: `/app`) |
+| `TILE_CACHE_DIR` | — | Terrain tile cache directory (default: `/app/.splat_tiles`) |
+| `TILE_CACHE_GB` | — | Maximum terrain tile cache size in GB (default: `2.0`) |
 
 ---
 

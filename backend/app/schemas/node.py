@@ -68,3 +68,22 @@ class NodeOut(BaseModel):
     coverage_status: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+
+class NodePublicOut(BaseModel):
+    """Stripped-down node response for unauthenticated (public) requests.
+    Coordinates are fuzzed server-side; sensitive fields are omitted."""
+    id: UUID
+    name: str
+    lat: float
+    lon: float
+    height_m: float
+    status: NodeStatus
+    hardware_id: str
+    sim_radius_km: float
+    environment: str
+    lora_preset: str
+    hardware: HardwareProfileOut
+    coverage_status: Optional[str] = None
+
+    model_config = {"from_attributes": True}

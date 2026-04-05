@@ -2,6 +2,11 @@
   <div class="p-3 d-flex flex-column h-100">
     <h6 class="fw-semibold mb-2">Path Planner</h6>
 
+    <div v-if="readOnly" class="alert alert-secondary py-2 small">
+      Login to use the path planner.
+    </div>
+
+    <template v-if="!readOnly">
     <p v-if="!result" class="text-muted small mb-2">
       Select two nodes as endpoints. The planner finds the best relay path
       through the mesh, maximising the worst-hop SNR (bottleneck).
@@ -144,6 +149,7 @@
         <span class="text-danger">&#9679; &lt;0 dB poor</span>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -157,6 +163,7 @@ import { formatCoord } from '../utils/privacy'
 
 defineProps<{
   pathStale?: boolean
+  readOnly?: boolean
 }>()
 
 const emit = defineEmits<{

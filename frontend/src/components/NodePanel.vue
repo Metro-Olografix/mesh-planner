@@ -4,7 +4,8 @@
     <div class="px-3 pt-3 pb-2 border-bottom">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <span class="fw-semibold">Nodes</span>
-        <button class="btn btn-primary btn-sm" @click="addNew">+ Add</button>
+        <button v-if="!readOnly" class="btn btn-primary btn-sm" @click="addNew">+ Add</button>
+        <span v-else class="badge bg-secondary" style="font-size:.7rem">read-only</span>
       </div>
       <input
         v-model="search"
@@ -22,8 +23,8 @@
       </div>
     </div>
 
-    <!-- Node form -->
-    <div v-if="showForm" class="border-bottom bg-light">
+    <!-- Node form (write-mode only) -->
+    <div v-if="showForm && !readOnly" class="border-bottom bg-light">
       <NodeForm
         :node="editingNode"
         :hardware="hardware"
@@ -68,6 +69,7 @@
           <!-- Actions -->
           <div class="node-actions" @click.stop>
             <button
+              v-if="!readOnly"
               class="action-btn coverage-btn"
               :class="{ 'coverage-btn--active': visibleCoverage.has(node.id) }"
               :title="visibleCoverage.has(node.id) ? 'Hide coverage' : 'Show coverage'"
@@ -77,7 +79,7 @@
               {{ coverageLabel(node) }}
             </button>
 
-            <div class="menu-wrap">
+            <div v-if="!readOnly" class="menu-wrap">
               <button
                 class="action-btn menu-trigger"
                 aria-label="More actions"
@@ -105,8 +107,8 @@
       </div>
     </div>
 
-    <!-- Legend -->
-    <div class="px-3 py-2 border-top bg-light" style="font-size:.75rem">
+    <!-- Legend (write-mode only — coverage controls are hidden in read-only) -->
+    <div v-if="!readOnly" class="px-3 py-2 border-top bg-light" style="font-size:.75rem">
       <div class="d-flex gap-3 text-muted" style="font-size:.7rem">
         <span>◉ Visible</span>
         <span>◎ Computed</span>
@@ -146,6 +148,7 @@ const props = defineProps<{
   visibleCoverage: Set<string>
   prefillLat?: number
   prefillLon?: number
+  readOnly?: boolean
 }>()
 
 const emit = defineEmits<{

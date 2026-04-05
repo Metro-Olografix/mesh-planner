@@ -1,6 +1,7 @@
 """
-Zitadel JWT validation via OIDC discovery + JWKS.
-Tokens are standard RS256-signed JWTs issued by Zitadel.
+OIDC JWT validation via OIDC discovery + JWKS.
+Tokens are standard RS256-signed JWTs. Works with any OIDC-compliant provider
+(Zitadel, Keycloak, Auth0, Okta, etc.).
 """
 import logging
 from typing import Any
@@ -14,6 +15,7 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer()
+_optional_security = HTTPBearer(auto_error=False)
 
 _discovery_cache: dict | None = None
 _jwks_cache: dict | None = None
@@ -25,10 +27,7 @@ async def _get_discovery() -> dict:
     global _discovery_cache
     if _discovery_cache is not None:
         return _discovery_cache
-    url = (
-        f"{settings.zitadel_domain}"
-        "/.well-known/openid-configuration"
-    )
+    url = f"{settings.oidc_issuer}/.well-known/openid-configuration"
     logger.info("Fetching OIDC discovery document from %s", url)
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -38,22 +37,20 @@ async def _get_discovery() -> dict:
         logger.info("OIDC discovery document fetched successfully")
     except httpx.ConnectTimeout:
         logger.error(
-            "Timeout connecting to Zitadel at %s"
-            " — is ZITADEL_DOMAIN reachable from the container?",
+            "Timeout connecting to OIDC provider at %s"
+            " — is OIDC_ISSUER reachable from the container?",
             url,
         )
         raise
     except httpx.HTTPStatusError as exc:
         logger.error(
-            "Zitadel discovery returned HTTP %s: %s",
+            "OIDC discovery returned HTTP %s: %s",
             exc.response.status_code,
             url,
         )
         raise
     except Exception as exc:
-        logger.error(
-            "Failed to fetch OIDC discovery from %s: %s", url, exc
-        )
+        logger.error("Failed to fetch OIDC discovery from %s: %s", url, exc)
         raise
     return _discovery_cache
 
@@ -75,9 +72,7 @@ async def _get_jwks() -> dict:
             len(_jwks_cache.get("keys", [])),
         )
     except Exception as exc:
-        logger.error(
-            "Failed to fetch JWKS from %s: %s", jwks_uri, exc
-        )
+        logger.error("Failed to fetch JWKS from %s: %s", jwks_uri, exc)
         raise
     return _jwks_cache
 
@@ -122,42 +117,69 @@ async def get_display_name(token: str, payload: dict) -> str:
             or sub
         )
     except Exception as exc:
-        logger.warning(
-            "UserInfo lookup failed for sub=%s: %s", sub, exc
-        )
+        logger.warning("UserInfo lookup failed for sub=%s: %s", sub, exc)
         name = sub
 
     _display_name_cache[sub] = name
     return name
 
 
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> dict[str, Any]:
-    token = credentials.credentials
+async def validate_token(token: str) -> dict[str, Any]:
+    """
+    Validate a JWT and return the decoded payload.
+    Raises HTTP 401 on any validation failure.
+    """
     try:
         jwks = await _get_jwks()
-        # Zitadel access tokens carry the project resource ID in `aud`,
-        # not the OAuth client ID, so we skip audience verification and
-        # rely on signature + issuer + expiry checks instead.
-        payload = jwt.decode(
-            token,
-            jwks,
-            algorithms=["RS256"],
-            issuer=settings.zitadel_domain,
-            options={"verify_at_hash": False, "verify_aud": False},
-        )
+        decode_options: dict[str, Any] = {"verify_at_hash": False}
+        decode_kwargs: dict[str, Any] = {
+            "algorithms": ["RS256"],
+            "issuer": settings.oidc_issuer,
+        }
+        if settings.oidc_audience:
+            decode_kwargs["audience"] = settings.oidc_audience
+        else:
+            # Some providers (e.g. Zitadel) put a project resource ID in aud
+            # rather than the OAuth client ID — skip verification in that case.
+            decode_options["verify_aud"] = False
+        decode_kwargs["options"] = decode_options
+
+        payload = jwt.decode(token, jwks, **decode_kwargs)
         # Stash the raw token so callers can use it for UserInfo lookups
         payload["_access_token"] = token
-        logger.debug(
-            "JWT validated for sub=%s", payload.get("sub", "?")
-        )
+        logger.debug("JWT validated for sub=%s", payload.get("sub", "?"))
         return payload
     except JWTError as exc:
-        logger.warning(
-            "JWT validation failed (%s): %s", type(exc).__name__, exc
-        )
+        logger.warning("JWT validation failed (%s): %s", type(exc).__name__, exc)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
         )
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> dict[str, Any]:
+    return await validate_token(credentials.credentials)
+
+
+async def get_optional_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_optional_security),
+) -> dict[str, Any] | None:
+    """
+    Returns the authenticated user, or None for unauthenticated requests when
+    PUBLIC_ACCESS is enabled. Raises 401 when PUBLIC_ACCESS is disabled.
+    """
+    if credentials is None:
+        if settings.public_access:
+            return None
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+    try:
+        return await validate_token(credentials.credentials)
+    except HTTPException:
+        if settings.public_access:
+            return None
+        raise

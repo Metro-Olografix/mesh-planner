@@ -10,9 +10,13 @@ export const useUIStore = defineStore('ui', () => {
   const jobs = ref<CoverageJob[]>([])
   const toasts = ref<Toast[]>([])
   const privacyMode = ref(false)
+  const privacyLocked = ref(false)
   let toastId = 0
 
-  function togglePrivacy() { privacyMode.value = !privacyMode.value }
+  function togglePrivacy() {
+    if (privacyLocked.value) return
+    privacyMode.value = !privacyMode.value
+  }
 
   function pushActivity(event: ActivityEvent) {
     activity.value.unshift(event)
@@ -51,5 +55,5 @@ export const useUIStore = defineStore('ui', () => {
     toasts.value = toasts.value.filter(t => t.id !== id)
   }
 
-  return { sidebarTab, editingNodeId, showNodeForm, activity, jobs, toasts, privacyMode, pushActivity, upsertJob, showToast, dismissToast, togglePrivacy }
+  return { sidebarTab, editingNodeId, showNodeForm, activity, jobs, toasts, privacyMode, privacyLocked, pushActivity, upsertJob, showToast, dismissToast, togglePrivacy }
 })

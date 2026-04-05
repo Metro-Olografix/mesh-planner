@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { type User } from 'oidc-client-ts'
-import { getUser, logout as authLogout } from '../auth'
+import { getUser, logout as authLogout, isPublicAccessEnabled } from '../auth'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
 
   const isAuthenticated = computed(() => !!user.value && !user.value.expired)
+  const isReadOnly = computed(() => isPublicAccessEnabled() && !isAuthenticated.value)
   const username = computed(
     () =>
       user.value?.profile?.preferred_username ??
@@ -29,5 +30,5 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
-  return { user, isAuthenticated, username, accessToken, init, setUser, logout }
+  return { user, isAuthenticated, isReadOnly, username, accessToken, init, setUser, logout }
 })

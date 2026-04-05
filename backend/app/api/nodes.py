@@ -8,12 +8,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.auth import get_current_user, get_display_name
+from app.auth import get_current_user, get_display_name, get_optional_user
 from app.database import get_db
 from app.models.node import Node
 from app.models.node_event import NodeEvent
-from app.schemas.node import NodeCreate, NodeOut, NodeUpdate
+from app.schemas.node import NodeCreate, NodeOut, NodePublicOut, NodeUpdate
 from app.services.sse import sse_manager
+from app.utils.privacy import fuzz_coords
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/nodes", tags=["nodes"])
@@ -42,14 +43,32 @@ def _serialize(node: Node) -> NodeOut:
     return NodeOut.model_validate({**node.__dict__, "coverage_status": cov_status})
 
 
-@router.get("/", response_model=list[NodeOut])
-async def list_nodes(db: AsyncSession = Depends(get_db), user: dict = Depends(get_current_user)):
+def _serialize_public(node: Node) -> NodePublicOut:
+    cov_status: str | None = None
+    if node.coverage:
+        cov_status = "invalidated" if node.coverage.invalidated else node.coverage.status
+    fuzzed_lat, fuzzed_lon = fuzz_coords(node.lat, node.lon, str(node.id))
+    return NodePublicOut.model_validate(
+        {**node.__dict__, "lat": fuzzed_lat, "lon": fuzzed_lon, "coverage_status": cov_status}
+    )
+
+
+@router.get("/")
+async def list_nodes(
+    db: AsyncSession = Depends(get_db),
+    user: dict | None = Depends(get_optional_user),
+):
     result = await db.execute(
         select(Node)
         .options(selectinload(Node.hardware), selectinload(Node.coverage))
         .order_by(Node.created_at.desc())
     )
     nodes = result.scalars().all()
+    if user is None:
+        # Public mode: no drafts, fuzz coords, strip sensitive fields
+        public_nodes = [n for n in nodes if n.status != "draft"]
+        logger.info("Listed %d nodes (public/unauthenticated)", len(public_nodes))
+        return [_serialize_public(n) for n in public_nodes]
     user_sub = user["sub"]
     visible = [
         n for n in nodes
@@ -79,10 +98,19 @@ async def create_node(
     return _serialize(node)
 
 
-@router.get("/{node_id}", response_model=NodeOut)
-async def get_node(node_id: UUID, db: AsyncSession = Depends(get_db), user: dict = Depends(get_current_user)):
+@router.get("/{node_id}")
+async def get_node(
+    node_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user: dict | None = Depends(get_optional_user),
+):
     logger.debug("Fetching node %s", node_id)
-    return _serialize(await _load_node(db, node_id))
+    node = await _load_node(db, node_id)
+    if user is None:
+        if node.status == "draft":
+            raise HTTPException(status_code=404, detail="Node not found")
+        return _serialize_public(node)
+    return _serialize(node)
 
 
 @router.patch("/{node_id}", response_model=NodeOut)

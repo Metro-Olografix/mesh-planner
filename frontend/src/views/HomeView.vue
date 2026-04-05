@@ -6,21 +6,25 @@
         <button class="btn btn-outline-secondary btn-sm d-md-none sidebar-toggle" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle sidebar">
           ☰
         </button>
-        <span class="navbar-brand mb-0 fw-bold" style="font-size:.95rem">
-          📡 <span class="d-none d-sm-inline">Metro Olografix —</span> Mesh Planner
+        <span class="navbar-brand mb-0 fw-bold d-flex align-items-center gap-2" style="font-size:.95rem">
+          <img v-if="hasCustomLogo()" :src="'/api/custom/logo'" alt="Logo" style="height:28px;width:auto;object-fit:contain" />
+          <span v-else>📡</span>
+          <span class="d-none d-sm-inline">Metro Olografix —</span> Mesh Planner
         </span>
       </div>
       <div class="ms-auto d-flex align-items-center gap-3">
         <button
           class="btn btn-sm"
           :class="uiStore.privacyMode ? 'btn-warning' : 'btn-outline-secondary'"
-          :title="uiStore.privacyMode ? 'Privacy mode ON — coordinates hidden, positions fuzzed' : 'Enable privacy mode'"
+          :disabled="uiStore.privacyLocked"
+          :title="uiStore.privacyLocked ? 'Privacy mode locked (public view)' : uiStore.privacyMode ? 'Privacy mode ON — coordinates hidden, positions fuzzed' : 'Enable privacy mode'"
           @click="uiStore.togglePrivacy()"
         >
           {{ uiStore.privacyMode ? '🔒' : '🔓' }}
         </button>
-        <span class="text-secondary small d-none d-sm-inline">{{ username }}</span>
-        <button class="btn btn-outline-secondary btn-sm" @click="authStore.logout()">Logout</button>
+        <span class="text-secondary small d-none d-sm-inline">{{ displayName }}</span>
+        <button v-if="authStore.isAuthenticated" class="btn btn-outline-secondary btn-sm" @click="authStore.logout()">Logout</button>
+        <button v-else class="btn btn-outline-light btn-sm" @click="handleLogin()">Login</button>
       </div>
     </nav>
 
@@ -57,6 +61,7 @@
               :visible-coverage="visibleCoverage"
               :prefill-lat="prefillLat"
               :prefill-lon="prefillLon"
+              :read-only="authStore.isReadOnly"
               @select="onNodeSelect"
               @toggle-coverage="toggleCoverage"
               @cancel="ghostPosition = null"
@@ -67,6 +72,7 @@
             <PathPlanner
               ref="pathPlannerRef"
               :path-stale="pathStale"
+              :read-only="authStore.isReadOnly"
               @path-found="pathResult = $event"
               @pick-mode-changed="pathPickMode = $event"
             />
@@ -102,7 +108,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useNodesStore } from '../stores/nodes'
 import { useUIStore } from '../stores/ui'
-import { getAccessToken } from '../auth'
+import { getAccessToken, login, hasCustomLogo } from '../auth'
 import MapView from '../components/MapView.vue'
 import NodePanel from '../components/NodePanel.vue'
 import PathPlanner from '../components/PathPlanner.vue'
@@ -114,7 +120,13 @@ const authStore = useAuthStore()
 const nodesStore = useNodesStore()
 const uiStore = useUIStore()
 
-const username = authStore.username
+const displayName = computed(() =>
+  authStore.isReadOnly ? 'Guest (read-only)' : authStore.username
+)
+
+async function handleLogin() {
+  await login()
+}
 const activeTab = ref<'nodes' | 'path' | 'activity' | 'jobs'>('nodes')
 const tabs = [
   { id: 'nodes' as const, label: 'Nodes' },
@@ -163,6 +175,20 @@ watch(
   { deep: true },
 )
 
+// Force privacy mode on for unauthenticated users in public-access mode
+watch(
+  () => authStore.isReadOnly,
+  (readOnly) => {
+    if (readOnly) {
+      uiStore.privacyLocked = true
+      uiStore.privacyMode = true
+    } else {
+      uiStore.privacyLocked = false
+    }
+  },
+  { immediate: true },
+)
+
 onMounted(async () => {
   await Promise.all([nodesStore.fetchNodes(), nodesStore.fetchHardware()])
   // Load persisted activity history before opening the SSE stream
@@ -190,8 +216,10 @@ onMounted(async () => {
 
 let evtSource: EventSource | null = null
 
-function startSSE() {
-  evtSource = new EventSource('/api/events')
+async function startSSE() {
+  const token = await getAccessToken()
+  const url = token ? `/api/events?token=${encodeURIComponent(token)}` : '/api/events'
+  evtSource = new EventSource(url)
   evtSource.onmessage = (e) => {
     try {
       const { type, data } = JSON.parse(e.data)
@@ -228,6 +256,7 @@ function onNodeSelect(id: string) {
 }
 
 function onMapClick(lat: number, lon: number) {
+  if (authStore.isReadOnly) return
   if (activeTab.value === 'path' && pathPlannerRef.value?.isPicking()) {
     pathPlannerRef.value.onMapClick(lat, lon)
   } else if (activeTab.value === 'nodes') {

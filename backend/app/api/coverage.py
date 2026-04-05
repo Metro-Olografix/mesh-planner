@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 
-from app.auth import get_current_user
+from app.auth import get_current_user, get_optional_user
 from app.config import settings
 from app.database import get_db, AsyncSessionLocal
 from app.models.coverage_cache import CoverageCache
@@ -159,7 +159,7 @@ async def trigger_coverage(
 
 
 @router.get("/{node_id}/status")
-async def coverage_status(node_id: UUID, db: AsyncSession = Depends(get_db), user: dict = Depends(get_current_user)):
+async def coverage_status(node_id: UUID, db: AsyncSession = Depends(get_db), user: dict | None = Depends(get_optional_user)):
     node = await _get_node_with_coverage(db, node_id)
     if not node.coverage:
         return {"status": "none"}

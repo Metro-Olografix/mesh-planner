@@ -177,12 +177,12 @@ watch(() => props.node, (n) => {
     lat: n.lat,
     lon: n.lon,
     height_m: n.height_m,
-    antenna_gain_dbi: n.antenna_gain_dbi,
+    antenna_gain_dbi: n.antenna_gain_dbi ?? null,
     sim_radius_km: n.sim_radius_km,
     environment: n.environment,
     lora_preset: n.lora_preset,
     status: n.status,
-    notes: n.notes,
+    notes: n.notes ?? null,
   }
 }, { immediate: true })
 

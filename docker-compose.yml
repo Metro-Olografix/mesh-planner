@@ -15,14 +15,18 @@ services:
       retries: 5
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    restart: unless-stopped
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "corepack enable && pnpm install && pnpm dev --host"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      VITE_API_TARGET: http://backend:8000
     depends_on:
       - backend
     ports:
-      - "8080:80"
+      - "5173:5173"
 
   backend:
     build:
@@ -36,6 +40,7 @@ services:
       - .env
     volumes:
       - splat_tiles:/app/.splat_tiles
+      - ./custom:/app/custom:ro
     ports:
       - "8000:8000"
 

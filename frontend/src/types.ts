@@ -27,14 +27,14 @@ export interface MeshNode {
   height_m: number
   status: NodeStatus
   hardware_id: string
-  antenna_gain_dbi: number | null
+  antenna_gain_dbi?: number | null
   sim_radius_km: number
   environment: NodeEnvironment
   lora_preset: LoraPreset
-  notes: string | null
-  created_by: string
-  created_at: string
-  updated_at: string
+  notes?: string | null
+  created_by?: string
+  created_at?: string
+  updated_at?: string
   hardware: HardwareProfile
   coverage_status: string | null
 }
