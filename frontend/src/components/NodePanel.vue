@@ -9,17 +9,18 @@
       </div>
       <input
         v-model="search"
-        class="form-control form-control-sm"
+        class="form-control form-control-sm mb-1"
         placeholder="Filter nodes…"
       />
-      <div class="d-flex gap-1 mt-1" role="group" aria-label="Filter by status">
+      <div class="d-flex gap-1" role="group" aria-label="Filter by status">
         <button
           v-for="f in statusFilters"
-          :key="f.value ?? 'all'"
-          class="btn btn-xs btn-filter"
+          :key="f.value"
+          class="btn btn-filter flex-fill"
           :class="activeFilter === f.value ? f.activeClass : 'btn-outline-secondary'"
+          :style="statusCounts[f.value] === 0 ? 'opacity:.4' : ''"
           @click="activeFilter = activeFilter === f.value ? null : f.value"
-        >{{ f.label }}</button>
+        >{{ f.label }} <span class="filter-count">{{ statusCounts[f.value] }}</span></button>
       </div>
     </div>
 
@@ -38,7 +39,12 @@
     <!-- List -->
     <div class="flex-fill overflow-auto">
       <div v-if="loading" class="text-center text-muted py-4">Loading…</div>
-      <div v-else-if="filtered.length === 0" class="text-center text-muted py-4">No nodes yet</div>
+      <div v-else-if="filtered.length === 0 && props.nodes.length === 0" class="text-center text-muted py-4">No nodes yet</div>
+      <div v-else-if="filtered.length === 0" class="text-center text-muted py-4">
+        No nodes match the filter.
+        <br>
+        <button class="btn btn-link btn-sm p-0 mt-1" style="font-size:.8rem" @click="search = ''; activeFilter = null">Clear filters</button>
+      </div>
       <div
         v-for="node in filtered"
         :key="node.id"
@@ -169,11 +175,10 @@ const confirmDeleteId = ref<string | null>(null)
 let confirmTimeout: ReturnType<typeof setTimeout> | null = null
 
 const statusFilters = [
-  { value: null,       label: 'All',      activeClass: 'btn-dark' },
   { value: 'planned',  label: 'Planned',  activeClass: 'btn-warning' },
   { value: 'deployed', label: 'Deployed', activeClass: 'btn-success' },
   { value: 'draft',    label: 'Draft',    activeClass: 'btn-secondary' },
-]
+] as const
 
 const filtered = computed(() => {
   const q = search.value.toLowerCase()
@@ -181,6 +186,17 @@ const filtered = computed(() => {
     if (activeFilter.value && n.status !== activeFilter.value) return false
     return !q || n.name.toLowerCase().includes(q) || n.hardware.name.toLowerCase().includes(q)
   })
+})
+
+const statusCounts = computed(() => {
+  const q = search.value.toLowerCase()
+  const matchesSearch = (n: (typeof props.nodes)[0]) =>
+    !q || n.name.toLowerCase().includes(q) || n.hardware.name.toLowerCase().includes(q)
+  return {
+    planned:  props.nodes.filter(n => n.status === 'planned'  && matchesSearch(n)).length,
+    deployed: props.nodes.filter(n => n.status === 'deployed' && matchesSearch(n)).length,
+    draft:    props.nodes.filter(n => n.status === 'draft'    && matchesSearch(n)).length,
+  }
 })
 
 function addNew() {
@@ -325,8 +341,8 @@ function coverageAriaLabel(node: MeshNode): string {
 .node-item--active { background: #e7f3ff; }
 .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:4px; }
 .dot--planned { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:4px; background:#e67e00; }
-.btn-xs { line-height:1.2; font-size:.72rem; padding:3px 8px; min-height:28px; }
-.btn-filter { font-size:.7rem; padding:2px 8px; }
+.btn-filter { font-size:.7rem; padding:2px 7px; }
+.filter-count { font-size:.65rem; opacity:.75; }
 .badge--planned { background-color:#e67e00; color:#fff; }
 
 /* ── Node actions ─────────────────────────────────────────── */
