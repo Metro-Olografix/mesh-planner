@@ -2,10 +2,16 @@
   <div class="p-3 d-flex flex-column h-100">
     <div class="d-flex align-items-center justify-content-between mb-3">
       <h6 class="fw-semibold mb-0">Coverage Jobs</h6>
+      <div v-if="confirmRecompute" class="d-flex align-items-center gap-2">
+        <span class="small text-warning">Recompute all?</span>
+        <button class="btn btn-warning btn-sm" style="font-size:.75rem" @click="doRecomputeAll">Yes</button>
+        <button class="btn btn-outline-secondary btn-sm" style="font-size:.75rem" @click="confirmRecompute = false">No</button>
+      </div>
       <button
+        v-else
         class="btn btn-warning btn-sm"
         :disabled="recomputingAll"
-        @click="triggerRecomputeAll"
+        @click="promptRecomputeAll"
         title="Invalidate and recompute coverage for all nodes"
       >
         {{ recomputingAll ? '⏳ Queuing…' : '↺ Recompute All' }}
@@ -68,9 +74,18 @@ defineProps<{ jobs: CoverageJob[] }>()
 const nodesStore = useNodesStore()
 const uiStore = useUIStore()
 const recomputingAll = ref(false)
+const confirmRecompute = ref(false)
+let confirmTimeout: ReturnType<typeof setTimeout> | null = null
 
-async function triggerRecomputeAll() {
-  if (!confirm('Recompute coverage for ALL nodes? This may take a while.')) return
+function promptRecomputeAll() {
+  confirmRecompute.value = true
+  if (confirmTimeout) clearTimeout(confirmTimeout)
+  confirmTimeout = setTimeout(() => { confirmRecompute.value = false }, 5000)
+}
+
+async function doRecomputeAll() {
+  confirmRecompute.value = false
+  if (confirmTimeout) clearTimeout(confirmTimeout)
   recomputingAll.value = true
   try {
     const result = await nodesStore.recomputeAll()

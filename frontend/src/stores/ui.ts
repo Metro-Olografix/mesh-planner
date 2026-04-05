@@ -9,7 +9,10 @@ export const useUIStore = defineStore('ui', () => {
   const activity = ref<ActivityEvent[]>([])
   const jobs = ref<CoverageJob[]>([])
   const toasts = ref<Toast[]>([])
+  const privacyMode = ref(false)
   let toastId = 0
+
+  function togglePrivacy() { privacyMode.value = !privacyMode.value }
 
   function pushActivity(event: ActivityEvent) {
     activity.value.unshift(event)
@@ -48,5 +51,5 @@ export const useUIStore = defineStore('ui', () => {
     toasts.value = toasts.value.filter(t => t.id !== id)
   }
 
-  return { sidebarTab, editingNodeId, showNodeForm, activity, jobs, toasts, pushActivity, upsertJob, showToast, dismissToast }
+  return { sidebarTab, editingNodeId, showNodeForm, activity, jobs, toasts, privacyMode, pushActivity, upsertJob, showToast, dismissToast, togglePrivacy }
 })

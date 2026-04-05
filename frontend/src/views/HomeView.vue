@@ -11,6 +11,14 @@
         </span>
       </div>
       <div class="ms-auto d-flex align-items-center gap-3">
+        <button
+          class="btn btn-sm"
+          :class="uiStore.privacyMode ? 'btn-warning' : 'btn-outline-secondary'"
+          :title="uiStore.privacyMode ? 'Privacy mode ON — coordinates hidden, positions fuzzed' : 'Enable privacy mode'"
+          @click="uiStore.togglePrivacy()"
+        >
+          {{ uiStore.privacyMode ? '🔒' : '🔓' }}
+        </button>
         <span class="text-secondary small d-none d-sm-inline">{{ username }}</span>
         <button class="btn btn-outline-secondary btn-sm" @click="authStore.logout()">Logout</button>
       </div>
@@ -58,6 +66,7 @@
           <div v-show="activeTab === 'path'" id="panel-path" role="tabpanel" class="tab-panel">
             <PathPlanner
               ref="pathPlannerRef"
+              :path-stale="pathStale"
               @path-found="pathResult = $event"
               @pick-mode-changed="pathPickMode = $event"
             />
@@ -89,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useNodesStore } from '../stores/nodes'
 import { useUIStore } from '../stores/ui'
@@ -124,6 +133,11 @@ const prefillLat = ref<number | undefined>()
 const prefillLon = ref<number | undefined>()
 const ghostPosition = ref<{ lat: number; lon: number } | null>(null)
 const sidebarOpen = ref(false)
+const lastNodeMutationAt = ref(0)
+const pathStale = computed(() => {
+  const computedAt = pathPlannerRef.value?.pathComputedAt ?? 0
+  return computedAt > 0 && lastNodeMutationAt.value > computedAt
+})
 
 // Sync node coverage_status changes → jobs panel
 function nodeJobSnapshots(): Array<{ id: string; name: string; status: string | null }> {
@@ -186,6 +200,7 @@ function startSSE() {
       } else {
         nodesStore.applySSEEvent(type, data)
         uiStore.pushActivity({ type, data, timestamp: new Date() })
+        lastNodeMutationAt.value = Date.now()
       }
     } catch {}
   }

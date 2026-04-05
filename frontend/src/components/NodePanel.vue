@@ -61,7 +61,7 @@
               {{ node.hardware.manufacturer }} {{ node.hardware.name }}
             </div>
             <div class="text-muted" style="font-size:.72rem">
-              {{ node.lat.toFixed(5) }}, {{ node.lon.toFixed(5) }} &nbsp;|&nbsp; {{ node.height_m }}m AGL
+              {{ formatCoord(node.lat, uiStore.privacyMode) }}, {{ formatCoord(node.lon, uiStore.privacyMode) }} &nbsp;|&nbsp; {{ node.height_m }}m AGL
             </div>
           </div>
 
@@ -91,7 +91,12 @@
                     class="action-menu-item"
                     @click="recompute(node); openMenu = null"
                   >Recompute coverage</button>
-                  <button class="action-menu-item action-menu-item--danger" @click="remove(node.id); openMenu = null">Delete</button>
+                  <div v-if="confirmDeleteId === node.id" class="action-menu-item action-menu-item--danger d-flex align-items-center gap-2">
+                    <span style="font-size:.78rem">Delete?</span>
+                    <button class="btn btn-danger btn-sm" style="font-size:.7rem;padding:1px 8px" @click="confirmDelete(node.id)">Yes</button>
+                    <button class="btn btn-outline-secondary btn-sm" style="font-size:.7rem;padding:1px 8px" @click="confirmDeleteId = null">No</button>
+                  </div>
+                  <button v-else class="action-menu-item action-menu-item--danger" @click="promptDelete(node.id)">Delete</button>
                 </div>
               </Transition>
             </div>
@@ -118,6 +123,7 @@ import type { HardwareProfile, MeshNode, NodeCreate, NodeUpdate } from '../types
 import NodeForm from './NodeForm.vue'
 import { useNodesStore } from '../stores/nodes'
 import { useUIStore } from '../stores/ui'
+import { formatCoord } from '../utils/privacy'
 
 // Click-outside directive for closing the dropdown
 const vClickOutside: Directive = {
@@ -156,6 +162,8 @@ const showForm = ref(false)
 const editingNode = ref<MeshNode | null>(null)
 const activeFilter = ref<string | null>(null)
 const openMenu = ref<string | null>(null)
+const confirmDeleteId = ref<string | null>(null)
+let confirmTimeout: ReturnType<typeof setTimeout> | null = null
 
 const statusFilters = [
   { value: null,       label: 'All',      activeClass: 'btn-dark' },
@@ -201,10 +209,16 @@ async function onSave(payload: NodeCreate | NodeUpdate) {
   if (wasNew) emit('saved')
 }
 
-async function remove(id: string) {
-  const node = props.nodes.find(n => n.id === id)
-  const name = node?.name ?? 'this node'
-  if (!confirm(`Delete "${name}"? Coverage data and computed paths involving this node will be lost.`)) return
+function promptDelete(id: string) {
+  confirmDeleteId.value = id
+  if (confirmTimeout) clearTimeout(confirmTimeout)
+  confirmTimeout = setTimeout(() => { confirmDeleteId.value = null }, 5000)
+}
+
+async function confirmDelete(id: string) {
+  confirmDeleteId.value = null
+  if (confirmTimeout) clearTimeout(confirmTimeout)
+  openMenu.value = null
   await store.deleteNode(id)
 }
 

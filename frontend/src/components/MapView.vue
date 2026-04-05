@@ -1,15 +1,23 @@
 <template>
-  <div id="map" ref="mapEl"></div>
+  <div style="position:relative;height:100%;width:100%">
+    <div id="map" ref="mapEl"></div>
+    <div v-if="isLoadingCoverage" class="coverage-loading-badge">
+      <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+      Loading coverage…
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch, ref } from 'vue'
+import { onMounted, watch, ref, computed } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import GeoRasterLayer from 'georaster-layer-for-leaflet'
 import parseGeoraster from 'georaster'
 import type { MeshNode, PathResult } from '../types'
 import { useAuthStore } from '../stores/auth'
+import { useUIStore } from '../stores/ui'
+import { fuzzCoords, formatCoord } from '../utils/privacy'
 
 // We use custom divIcons for all markers so no default icon fix is needed
 
@@ -27,12 +35,14 @@ const emit = defineEmits<{
 }>()
 
 const authStore = useAuthStore()
+const uiStore = useUIStore()
 const mapEl = ref<HTMLElement>()
 let map: L.Map
 let markersLayer: L.LayerGroup
 let pathLayer: L.LayerGroup
 const rasterLayers = new Map<string, any>()     // id → active Leaflet layer on map
-const loadingIds = new Set<string>()             // ids currently being fetched
+const loadingIds = ref(new Set<string>())        // ids currently being fetched
+const isLoadingCoverage = computed(() => loadingIds.value.size > 0)
 const loadTokens = new Map<string, number>()    // id → generation counter for cancellation
 let hasAutoFit = false
 
@@ -104,15 +114,18 @@ watch(
   () => [...props.visibleCoverage].sort().join(','),
   () => syncCoverage(),
 )
+watch(() => uiStore.privacyMode, () => { renderMarkers(); renderPath() })
 
 // ── Rendering ────────────────────────────────────────────────────────────────
 
 function renderMarkers() {
   if (!markersLayer) return
   markersLayer.clearLayers()
+  const privacy = uiStore.privacyMode
   for (const node of props.nodes) {
+    const pos = privacy ? fuzzCoords(node.lat, node.lon, node.id) : { lat: node.lat, lon: node.lon }
     const icon = node.status === 'deployed' ? deployedIcon : node.status === 'planned' ? plannedIcon : draftIcon
-    const marker = L.marker([node.lat, node.lon], { icon, alt: `${node.name} (${node.status})` })
+    const marker = L.marker([pos.lat, pos.lon], { icon, alt: `${node.name} (${node.status})` })
     marker.bindPopup(`
       <strong>${node.name}</strong><br/>
       ${node.hardware.name}<br/>
@@ -130,10 +143,15 @@ function renderPath() {
   pathLayer.clearLayers()
   if (!props.pathResult?.found) return
 
-  const coords = props.pathResult.hops.map(h => [h.lat, h.lon] as L.LatLngTuple)
+  const privacy = uiStore.privacyMode
+  const coords = props.pathResult.hops.map(h => {
+    const p = privacy ? fuzzCoords(h.lat, h.lon, h.node_id ?? h.name) : { lat: h.lat, lon: h.lon }
+    return [p.lat, p.lon] as L.LatLngTuple
+  })
   L.polyline(coords, { color: '#0d6efd', weight: 3, dashArray: '8 4' }).addTo(pathLayer)
 
   props.pathResult.hops.forEach((hop, i) => {
+    const pos = privacy ? fuzzCoords(hop.lat, hop.lon, hop.node_id ?? hop.name) : { lat: hop.lat, lon: hop.lon }
     const label = i === 0 ? 'A' : i === props.pathResult!.hops.length - 1 ? 'B' : `R${i}`
     const icon = L.divIcon({
       html: `<div style="background:#0d6efd;color:#fff;border-radius:50%;width:22px;height:22px;
@@ -144,7 +162,7 @@ function renderPath() {
       className: '',
     })
     const snrText = hop.snr_db !== null ? `SNR to next: ${hop.snr_db} dB` : ''
-    L.marker([hop.lat, hop.lon], { icon })
+    L.marker([pos.lat, pos.lon], { icon })
       .bindPopup(`<strong>${hop.name}</strong>${snrText ? `<br/>${snrText}` : ''}`)
       .addTo(pathLayer)
   })
@@ -166,7 +184,7 @@ function syncCoverage() {
 
   // Start a load for each desired id not already on map or in flight
   for (const id of desired) {
-    if (!rasterLayers.has(id) && !loadingIds.has(id)) {
+    if (!rasterLayers.has(id) && !loadingIds.value.has(id)) {
       loadRasterLayer(id)
     }
   }
@@ -175,7 +193,7 @@ function syncCoverage() {
 async function loadRasterLayer(id: string) {
   const myToken = (loadTokens.get(id) ?? 0) + 1
   loadTokens.set(id, myToken)
-  loadingIds.add(id)
+  loadingIds.value.add(id)
   try {
     const token = authStore.accessToken
     const res = await fetch(`/api/coverage/${id}/geotiff`, {
@@ -199,7 +217,7 @@ async function loadRasterLayer(id: string) {
   } catch {
     // coverage not ready yet
   } finally {
-    loadingIds.delete(id)
+    loadingIds.value.delete(id)
   }
 }
 
@@ -215,7 +233,8 @@ watch(() => props.ghostPosition, (pos) => {
   }
   if (pos) {
     ghostMarker = L.marker([pos.lat, pos.lon], { icon: ghostIcon })
-    ghostMarker.bindPopup(`<strong style="color:#333">New node here</strong><br/><small style="color:#666">${pos.lat.toFixed(5)}, ${pos.lon.toFixed(5)}</small>`)
+    const coordText = uiStore.privacyMode ? '*****' : `${pos.lat.toFixed(5)}, ${pos.lon.toFixed(5)}`
+    ghostMarker.bindPopup(`<strong style="color:#333">New node here</strong><br/><small style="color:#666">${coordText}</small>`)
     ghostMarker.addTo(map)
   }
 })
@@ -242,5 +261,20 @@ defineExpose({ fitNodes, centerOn })
 #map {
   height: 100%;
   width: 100%;
+}
+.coverage-loading-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  background: rgba(255,255,255,.92);
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: .8rem;
+  color: #495057;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+  display: flex;
+  align-items: center;
 }
 </style>

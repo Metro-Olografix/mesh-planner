@@ -1,8 +1,8 @@
 <template>
   <div class="p-3 d-flex flex-column h-100">
-    <h6 class="fw-semibold mb-3">Path Planner</h6>
+    <h6 class="fw-semibold mb-2">Path Planner</h6>
 
-    <p class="text-muted small mb-3">
+    <p v-if="!result" class="text-muted small mb-2">
       Select two nodes as endpoints. The planner finds the best relay path
       through the mesh, maximising the worst-hop SNR (bottleneck).
       SPLAT! terrain data is used where available.
@@ -26,17 +26,16 @@
       </select>
     </div>
 
-    <div class="d-flex justify-content-end mb-1">
+    <div class="d-flex justify-content-center my-1">
       <button
-        class="btn btn-outline-secondary btn-sm"
+        class="btn btn-outline-secondary swap-btn"
         title="Swap source and destination"
         aria-label="Swap source and destination"
-        style="font-size:.75rem;padding:3px 10px"
         @click="swap"
-      >⇅ Swap</button>
+      >⇅</button>
     </div>
 
-    <div class="mb-3">
+    <div class="mb-2">
       <label class="form-label small mb-1 fw-semibold text-danger">Destination (B)</label>
       <select v-model="destId" class="form-select form-select-sm">
         <option value="">Select node…</option>
@@ -54,7 +53,7 @@
     </div>
 
     <!-- Status filters -->
-    <div class="mb-3">
+    <div class="mb-2">
       <label class="form-label small mb-1 fw-semibold">Include relay nodes</label>
       <div class="d-flex gap-3">
         <div class="form-check form-check-inline" v-for="s in allStatuses" :key="s">
@@ -71,7 +70,7 @@
     </div>
 
     <button
-      class="btn btn-primary btn-sm mb-3"
+      class="btn btn-primary btn-sm mb-2"
       :disabled="!sourceId || !destId || loading"
       @click="findPath"
     >
@@ -81,7 +80,7 @@
 
     <button
       v-if="result"
-      class="btn btn-outline-secondary btn-sm mb-3"
+      class="btn btn-outline-secondary btn-sm mb-2"
       @click="clearResult"
     >
       Clear result
@@ -89,6 +88,10 @@
 
     <!-- Result -->
     <div v-if="result" class="flex-fill overflow-auto">
+      <div v-if="pathStale && result.found" class="alert alert-warning py-2 small d-flex align-items-center gap-2">
+        <span>Nodes have changed since this path was computed.</span>
+        <button class="btn btn-warning btn-sm" style="font-size:.75rem;white-space:nowrap" @click="findPath">Re-run</button>
+      </div>
       <div v-if="result.found" class="alert alert-success py-2 small">
         {{ result.message }}
       </div>
@@ -113,7 +116,7 @@
           </div>
           <div class="flex-fill" style="font-size:.8rem">
             <div class="fw-semibold">{{ hop.name }}</div>
-            <div class="text-muted">{{ hop.lat.toFixed(5) }}, {{ hop.lon.toFixed(5) }}</div>
+            <div class="text-muted">{{ formatCoord(hop.lat, uiStore.privacyMode) }}, {{ formatCoord(hop.lon, uiStore.privacyMode) }}</div>
           </div>
           <div v-if="hop.snr_db !== null" class="small text-end" :class="snrClass(hop.snr_db)">
             {{ hop.snr_db }} dB
@@ -132,8 +135,8 @@
       </div>
     </div>
 
-    <!-- SNR legend -->
-    <div class="mt-auto pt-2 border-top small text-muted" style="font-size:.72rem">
+    <!-- SNR legend (hidden when result is shown to save space on small screens) -->
+    <div v-if="!result" class="mt-auto pt-2 border-top small text-muted" style="font-size:.72rem">
       <div class="fw-semibold mb-1">SNR quality</div>
       <div class="d-flex gap-3">
         <span class="text-success">&#9679; &ge;10 dB good</span>
@@ -150,6 +153,11 @@ import type { NodeStatus, PathResult } from '../types'
 import { useNodesStore } from '../stores/nodes'
 import { useAuthStore } from '../stores/auth'
 import { useUIStore } from '../stores/ui'
+import { formatCoord } from '../utils/privacy'
+
+defineProps<{
+  pathStale?: boolean
+}>()
 
 const emit = defineEmits<{
   pathFound: [result: PathResult | null]
@@ -165,6 +173,7 @@ const sourceId = ref('')
 const destId = ref('')
 const result = ref<PathResult | null>(null)
 const loading = ref(false)
+const pathComputedAt = ref(0)
 
 const allStatuses: NodeStatus[] = ['deployed', 'planned', 'draft']
 const includedStatuses = ref<NodeStatus[]>(['deployed', 'planned'])
@@ -180,6 +189,7 @@ function clearResult() {
   result.value = null
   sourceId.value = ''
   destId.value = ''
+  pathComputedAt.value = 0
   emit('pathFound', null)
 }
 
@@ -207,6 +217,7 @@ async function findPath() {
       }),
     })
     result.value = await res.json()
+    pathComputedAt.value = Date.now()
     emit('pathFound', result.value)
   } catch (e) {
     console.error(e)
@@ -220,6 +231,7 @@ async function findPath() {
 defineExpose({
   onMapClick: (_lat: number, _lon: number) => {},
   isPicking: () => false,
+  pathComputedAt,
 })
 </script>
 
@@ -231,4 +243,15 @@ defineExpose({
   flex-shrink: 0;
 }
 .snr-marginal { color: #e67e00; }
+.swap-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 </style>

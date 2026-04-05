@@ -25,12 +25,17 @@
     <div class="row g-2 mb-2">
       <div class="col">
         <label class="form-label small mb-1">Latitude <span class="text-danger">*</span></label>
-        <input v-model.number="form.lat" type="number" step="any" min="-90" max="90" class="form-control form-control-sm" required placeholder="Click map to set" />
+        <input v-if="uiStore.privacyMode && isEdit" class="form-control form-control-sm" disabled value="*****" />
+        <input v-else v-model.number="form.lat" type="number" step="any" min="-90" max="90" class="form-control form-control-sm" required placeholder="Click map to set" />
       </div>
       <div class="col">
         <label class="form-label small mb-1">Longitude <span class="text-danger">*</span></label>
-        <input v-model.number="form.lon" type="number" step="any" min="-180" max="180" class="form-control form-control-sm" required placeholder="Click map to set" />
+        <input v-if="uiStore.privacyMode && isEdit" class="form-control form-control-sm" disabled value="*****" />
+        <input v-else v-model.number="form.lon" type="number" step="any" min="-180" max="180" class="form-control form-control-sm" required placeholder="Click map to set" />
       </div>
+    </div>
+    <div v-if="uiStore.privacyMode && !isEdit" class="text-warning" style="font-size:.72rem;margin-top:-4px;margin-bottom:4px">
+      Privacy mode active — coordinates are visible in this form but hidden elsewhere.
     </div>
 
     <div class="row g-2 mb-2">
@@ -127,6 +132,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import type { HardwareProfile, MeshNode, NodeCreate, NodeEnvironment, NodeStatus, NodeUpdate } from '../types'
+import { useUIStore } from '../stores/ui'
+
+const uiStore = useUIStore()
 
 const props = defineProps<{
   node?: MeshNode | null
