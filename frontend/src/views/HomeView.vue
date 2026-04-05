@@ -1,30 +1,49 @@
 <template>
   <div class="app-layout">
     <!-- Top navbar -->
-    <nav class="navbar navbar-dark bg-dark px-3 py-2 d-flex align-items-center" style="height:48px">
-      <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-outline-secondary btn-sm d-md-none sidebar-toggle" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle sidebar">
-          ☰
+    <nav class="navbar navbar-dark bg-dark px-3">
+      <div class="navbar-left">
+        <button class="nav-btn d-md-none" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle sidebar">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"/>
+          </svg>
         </button>
-        <span class="navbar-brand mb-0 fw-bold d-flex align-items-center gap-2" style="font-size:.95rem">
-          <img v-if="hasCustomLogo()" :src="'/api/custom/logo'" alt="Logo" style="height:28px;width:auto;object-fit:contain" />
-          <span v-else>📡</span>
-          <span class="d-none d-sm-inline">Metro Olografix —</span> Mesh Planner
+        <span class="navbar-brand mb-0 fw-bold d-flex align-items-center gap-2">
+          <img v-if="hasCustomLogo()" :src="'/api/custom/logo'" alt="Logo" style="height:24px;width:auto;object-fit:contain" />
+          <span v-else aria-hidden="true">📡</span>
+          <span class="brand-full d-none d-sm-inline text-white-50">Metro Olografix —</span><span>Mesh Planner</span>
         </span>
       </div>
-      <div class="ms-auto d-flex align-items-center gap-3">
+      <div class="navbar-right">
+        <a
+          href="https://github.com/Metro-Olografix/mesh-planner"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="nav-btn d-none d-sm-inline-flex"
+          title="Source code on GitHub"
+          aria-label="Source code on GitHub"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8"/>
+          </svg>
+        </a>
         <button
-          class="btn btn-sm"
-          :class="uiStore.privacyMode ? 'btn-warning' : 'btn-outline-secondary'"
+          class="nav-btn"
+          :class="uiStore.privacyMode ? 'nav-btn--active' : ''"
           :disabled="uiStore.privacyLocked"
           :title="uiStore.privacyLocked ? 'Privacy mode locked (public view)' : uiStore.privacyMode ? 'Privacy mode ON — coordinates hidden, positions fuzzed' : 'Enable privacy mode'"
           @click="uiStore.togglePrivacy()"
         >
-          {{ uiStore.privacyMode ? '🔒' : '🔓' }}
+          <svg v-if="uiStore.privacyMode" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M11 1a2 2 0 0 0-2 2v4a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h5V3a3 3 0 0 1 6 0v4a.5.5 0 0 1-1 0V3a2 2 0 0 0-2-2"/>
+          </svg>
         </button>
-        <span class="text-secondary small d-none d-sm-inline">{{ displayName }}</span>
-        <button v-if="authStore.isAuthenticated" class="btn btn-outline-secondary btn-sm" @click="authStore.logout()">Logout</button>
-        <button v-else class="btn btn-outline-light btn-sm" @click="handleLogin()">Login</button>
+        <span class="nav-username d-none d-sm-inline">{{ displayName }}</span>
+        <button v-if="authStore.isAuthenticated" class="nav-btn nav-btn--text" @click="authStore.logout()">Logout</button>
+        <button v-else class="nav-btn nav-btn--text nav-btn--primary" @click="handleLogin()">Login</button>
       </div>
     </nav>
 
@@ -269,6 +288,7 @@ function onMapClick(lat: number, lon: number) {
 </script>
 
 <style scoped>
+/* ── Layout ──────────────────────────────────────────────────────────────── */
 .app-layout {
   display: flex;
   flex-direction: column;
@@ -300,19 +320,105 @@ function onMapClick(lat: number, lon: number) {
   display: flex;
   flex-direction: column;
 }
+
+/* ── Navbar ──────────────────────────────────────────────────────────────── */
+.navbar {
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;        /* never wrap onto a second line */
+  overflow: hidden;
+}
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;             /* allow text to shrink/truncate before pushing right side off */
+  flex: 1;
+  overflow: hidden;
+}
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;           /* right side never shrinks — it's always fully visible */
+}
+.navbar-brand {
+  font-size: .9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.nav-username {
+  font-size: .8rem;
+  color: rgba(255,255,255,.45);
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Unified icon/text button for the navbar — all the same 32×32 tap target */
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.2);
+  background: transparent;
+  color: rgba(255,255,255,.75);
+  font-size: .8125rem;
+  line-height: 1;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .15s, border-color .15s, color .15s;
+  white-space: nowrap;
+}
+.nav-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,.1);
+  border-color: rgba(255,255,255,.4);
+  color: #fff;
+}
+.nav-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+.nav-btn--active {
+  background: #ffc107;
+  border-color: #ffc107;
+  color: #000;
+}
+.nav-btn--active:hover:not(:disabled) {
+  background: #ffca2c;
+  border-color: #ffca2c;
+  color: #000;
+}
+.nav-btn--text {
+  padding: 0 12px;
+}
+.nav-btn--primary {
+  border-color: rgba(255,255,255,.5);
+  color: #fff;
+}
+.nav-btn--primary:hover:not(:disabled) {
+  background: rgba(255,255,255,.15);
+  border-color: #fff;
+}
+
+/* ── Sidebar overlay ─────────────────────────────────────────────────────── */
 .sidebar-overlay {
   position: absolute;
   inset: 0;
   background: rgba(0,0,0,.4);
   z-index: 999;
 }
-.sidebar-toggle {
-  font-size: 1.1rem;
-  padding: 2px 8px;
-  line-height: 1;
-}
 
-/* Mobile: sidebar slides over the map */
+/* ── Mobile: sidebar slides over the map ────────────────────────────────── */
 @media (max-width: 767.98px) {
   .sidebar {
     position: absolute;
