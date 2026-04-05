@@ -1,0 +1,163 @@
+{
+  "common": {
+    "save": "Salva",
+    "save_changes": "Salva modifiche",
+    "cancel": "Annulla",
+    "loading": "Caricamento...",
+    "saving": "Salvataggio...",
+    "delete": "Elimina",
+    "confirm_delete": "Eliminare?",
+    "yes": "Sì",
+    "no": "No",
+    "edit": "Modifica",
+    "add": "Aggiungi",
+    "read_only": "sola lettura",
+    "on": "On",
+    "off": "Off",
+    "optional": "Opzionale...",
+    "dismiss": "Chiudi",
+    "queuing": "In coda...",
+    "recompute_all": "Ricalcola tutto",
+    "completed": "completato",
+    "failed": "fallito",
+    "queued": "in coda",
+    "processing": "in corso",
+    "more_actions": "Altre azioni"
+  },
+  "nav": {
+    "login": "Accedi",
+    "logout": "Esci",
+    "privacy_mode": "Privacy",
+    "language": "Lingua"
+  },
+  "tabs": {
+    "nodes": "Nodi",
+    "path": "Pianificatore",
+    "activity": "Attività",
+    "jobs": "Processi"
+  },
+  "node": {
+    "add_node": "Aggiungi nodo",
+    "edit_node": "Modifica nodo",
+    "filter_placeholder": "Filtra nodi...",
+    "no_nodes": "Nessun nodo ancora",
+    "no_matches": "Nessun nodo corrisponde al filtro.",
+    "clear_filters": "Cancella filtri",
+    "status": {
+      "label": "Stato",
+      "planned": "Pianificato",
+      "deployed": "Installato",
+      "draft": "Bozza",
+      "planned_badge": "◆ pianificato",
+      "deployed_badge": "✓ installato",
+      "draft_badge": "● bozza",
+      "draft_help": "I nodi in bozza sono visibili solo a te e sono esclusi dalla pianificazione altrui."
+    },
+    "form": {
+      "name": "Nome",
+      "hardware": "Hardware",
+      "select_hardware": "Seleziona hardware...",
+      "latitude": "Latitudine",
+      "longitude": "Longitudine",
+      "click_map": "Clicca sulla mappa per impostare",
+      "privacy_warning": "Modalità privacy attiva — le coordinate sono visibili in questo modulo ma nascoste altrove.",
+      "height_agl": "Altezza AGL (m)",
+      "antenna_gain": "Guadagno antenna (dBi)",
+      "clutter_env": "Ambiente (clutter)",
+      "clutter_help": "Imposta l'altezza degli ostacoli usata nella simulazione della copertura RF (opzione SPLAT! -gc).",
+      "clutter_auto_help": "\"Auto\" interroga i dati sull'uso del suolo ESA WorldCover per questa posizione.",
+      "clutter_options": {
+        "auto": "Rilevamento automatico dai dati satellitari (consigliato)",
+        "urban": "Urbano — edifici densi (~10 m)",
+        "suburban": "Suburbano — case basse miste (~5 m)",
+        "rural": "Rurale — strutture sparse (~2 m)",
+        "open": "Aperto — campi, acqua, aeroporti (~0 m)"
+      },
+      "lora_preset": "Preset LoRa",
+      "lora_help": "Deve corrispondere al preset configurato sul dispositivo fisico. Influisce sui calcoli SNR nella ricerca del percorso.",
+      "sim_radius": "Raggio simulazione copertura (km)",
+      "sim_radius_help": "Raggio maggiore = tempo di calcolo più lungo",
+      "notes": "Note"
+    },
+    "aria": {
+      "filter_status": "Filtra per stato"
+    },
+    "actions": {
+      "show_coverage": "Mostra copertura",
+      "hide_coverage": "Nascondi copertura",
+      "recompute_coverage": "Ricalcola copertura",
+      "computing_coverage": "Calcolo copertura per {name}",
+      "compute_show_coverage": "Calcola e mostra copertura per {name}"
+    },
+    "legend": {
+      "visible": "Visibile",
+      "computed": "Calcolato",
+      "not_computed": "Non calcolato",
+      "computing": "In calcolo"
+    },
+    "messages": {
+      "trigger_failed": "Attivazione copertura fallita: {err}",
+      "still_computing": "Il calcolo della copertura è in corso, attendere...",
+      "recompute_failed": "Ricalcolo copertura fallito: {err}",
+      "comp_failed": "Il calcolo della copertura è fallito per questo nodo",
+      "comp_timeout": "Il calcolo della copertura è andato in timeout"
+    }
+  },
+  "path": {
+    "title": "Pianificatore Percorsi",
+    "login_required": "Accedi per usare il pianificatore percorsi.",
+    "intro": "Seleziona due nodi come estremi. Il pianificatore troverà il miglior percorso relay attraverso la rete, massimizzando l'SNR dell'hop peggiore (collo di bottiglia). Vengono usati i dati del terreno SPLAT! dove disponibili.",
+    "source": "Sorgente (A)",
+    "destination": "Destinazione (B)",
+    "select_node": "Seleziona nodo...",
+    "swap": "Inverti sorgente e destinazione",
+    "include_relays": "Includi nodi relay",
+    "find_path": "Trova il miglior percorso",
+    "searching": "Ricerca in corso...",
+    "clear_result": "Cancella risultato",
+    "stale_warning": "I nodi sono cambiati da quando questo percorso è stato calcolato.",
+    "rerun": "Riesegui",
+    "hops": "Salti (Hops)",
+    "bottleneck_snr": "SNR collo di bottiglia",
+    "low_snr_warning": "Basso SNR nel collo di bottiglia — considera l'aggiunta di nodi relay.",
+    "snr_quality": "Qualità SNR",
+    "good": "buono",
+    "marginal": "marginale",
+    "poor": "scarso",
+    "snr_to_next": "SNR verso il successivo",
+    "messages": {
+      "find_failed": "Ricerca del percorso fallita. Riprova."
+    }
+  },
+  "activity": {
+    "title": "Feed Attività",
+    "no_activity": "Nessuna attività recente",
+    "empty_help": "Crea o aggiorna un nodo per vedere gli eventi qui.",
+    "actions": {
+      "added": " ha aggiunto ",
+      "updated": " ha aggiornato ",
+      "deleted": " ha eliminato "
+    }
+  },
+  "jobs": {
+    "title": "Processi di generazione copertura",
+    "recompute_all_confirm": "Ricalcolare tutto?",
+    "no_jobs": "Nessun processo di generazione copertura ancora",
+    "empty_help": "Clicca sul pulsante copertura di un nodo per avviare un calcolo.",
+    "started": "iniziato il",
+    "done": "fatto il",
+    "queued": "In coda",
+    "processing": "In corso",
+    "recompute_all_success": "Messo in coda il ricalcolo per {count} nodo/i.",
+    "recompute_all_failed": "Impossibile avviare il ricalcolo globale: {err}"
+  },
+  "map": {
+    "loading_coverage": "Caricamento copertura...",
+    "new_node_here": "Nuovo nodo qui"
+  },
+  "auth": {
+    "guest": "Ospite (sola lettura)",
+    "login_failed": "Accesso fallito: {err}",
+    "completing_login": "Completamento accesso..."
+  }
+}

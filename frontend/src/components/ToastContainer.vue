@@ -8,13 +8,16 @@
       role="alert"
     >
       <span>{{ toast.message }}</span>
-      <button class="toast-close" @click="uiStore.dismissToast(toast.id)" aria-label="Dismiss">&times;</button>
+      <button class="toast-close" @click="uiStore.dismissToast(toast.id)" :aria-label="$t('common.dismiss')">&times;</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useUIStore } from '../stores/ui'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 const uiStore = useUIStore()
 </script>
 

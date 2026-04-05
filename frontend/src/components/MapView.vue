@@ -3,13 +3,14 @@
     <div id="map" ref="mapEl"></div>
     <div v-if="isLoadingCoverage" class="coverage-loading-badge">
       <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-      Loading coverage…
+      {{ $t('map.loading_coverage') }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, watch, ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import GeoRasterLayer from 'georaster-layer-for-leaflet'
@@ -36,6 +37,7 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore()
 const uiStore = useUIStore()
+const { t } = useI18n()
 const mapEl = ref<HTMLElement>()
 let map: L.Map
 let markersLayer: L.LayerGroup
@@ -129,7 +131,7 @@ function renderMarkers() {
     marker.bindPopup(`
       <strong>${node.name}</strong><br/>
       ${node.hardware.name}<br/>
-      Status: <em>${node.status}</em><br/>
+      ${t('node.status.label')}: <em>${t(`node.status.${node.status}`)}</em><br/>
       TX: ${node.hardware.tx_power_dbm} dBm &nbsp;|&nbsp; ${node.hardware.frequency_mhz} MHz
       ${node.notes ? `<br/><small>${node.notes}</small>` : ''}
     `)
@@ -155,13 +157,13 @@ function renderPath() {
     const label = i === 0 ? 'A' : i === props.pathResult!.hops.length - 1 ? 'B' : `R${i}`
     const icon = L.divIcon({
       html: `<div style="background:#0d6efd;color:#fff;border-radius:50%;width:22px;height:22px;
-             display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;
+              display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;
              box-shadow:0 2px 4px rgba(0,0,0,.4)">${label}</div>`,
       iconSize: [22, 22],
       iconAnchor: [11, 11],
       className: '',
     })
-    const snrText = hop.snr_db !== null ? `SNR to next: ${hop.snr_db} dB` : ''
+    const snrText = hop.snr_db !== null ? `${t('path.snr_to_next')}: ${hop.snr_db} dB` : ''
     L.marker([pos.lat, pos.lon], { icon })
       .bindPopup(`<strong>${hop.name}</strong>${snrText ? `<br/>${snrText}` : ''}`)
       .addTo(pathLayer)
@@ -234,7 +236,7 @@ watch(() => props.ghostPosition, (pos) => {
   if (pos) {
     ghostMarker = L.marker([pos.lat, pos.lon], { icon: ghostIcon })
     const coordText = uiStore.privacyMode ? '*****' : `${pos.lat.toFixed(5)}, ${pos.lon.toFixed(5)}`
-    ghostMarker.bindPopup(`<strong style="color:#333">New node here</strong><br/><small style="color:#666">${coordText}</small>`)
+    ghostMarker.bindPopup(`<strong style="color:#333">${t('map.new_node_here')}</strong><br/><small style="color:#666">${coordText}</small>`)
     ghostMarker.addTo(map)
   }
 })

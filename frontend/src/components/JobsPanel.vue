@@ -1,29 +1,29 @@
 <template>
   <div class="p-3 d-flex flex-column h-100">
     <div class="d-flex align-items-center justify-content-between mb-3">
-      <h6 class="fw-semibold mb-0">Coverage Jobs</h6>
+      <h6 class="fw-semibold mb-0">{{ $t('jobs.title') }}</h6>
       <template v-if="authStore.isAuthenticated">
         <div v-if="confirmRecompute" class="d-flex align-items-center gap-2">
-          <span class="small text-warning">Recompute all?</span>
-          <button class="btn btn-warning btn-sm" style="font-size:.75rem" @click="doRecomputeAll">Yes</button>
-          <button class="btn btn-outline-secondary btn-sm" style="font-size:.75rem" @click="confirmRecompute = false">No</button>
+          <span class="small text-warning">{{ $t('jobs.recompute_all_confirm') }}</span>
+          <button class="btn btn-warning btn-sm" style="font-size:.75rem" @click="doRecomputeAll">{{ $t('common.yes') }}</button>
+          <button class="btn btn-outline-secondary btn-sm" style="font-size:.75rem" @click="confirmRecompute = false">{{ $t('common.no') }}</button>
         </div>
         <button
           v-else
           class="btn btn-warning btn-sm"
           :disabled="recomputingAll"
           @click="promptRecomputeAll"
-          title="Invalidate and recompute coverage for all nodes"
+          :title="$t('node.actions.recompute_coverage')"
         >
-          {{ recomputingAll ? '⏳ Queuing…' : '↺ Recompute All' }}
+          {{ recomputingAll ? $t('common.queuing') : '↺ ' + $t('common.recompute_all') }}
         </button>
       </template>
     </div>
 
     <div v-if="jobs.length === 0" class="text-muted small text-center py-4">
       <div style="font-size:1.5rem;margin-bottom:4px">--</div>
-      No coverage jobs yet<br/>
-      <span style="font-size:.72rem">Click a node's coverage button to start a computation.</span>
+      {{ $t('jobs.no_jobs') }}<br/>
+      <span style="font-size:.72rem">{{ $t('jobs.empty_help') }}</span>
     </div>
 
     <div class="flex-fill overflow-auto">
@@ -38,9 +38,9 @@
         <div class="flex-fill" style="min-width:0; font-size:.82rem">
           <div class="fw-semibold text-truncate">{{ job.nodeName }}</div>
           <div class="text-muted" style="font-size:.72rem">
-            started {{ formatTime(job.startedAt) }}
+            {{ $t('jobs.started') }} {{ formatTime(job.startedAt) }}
             <template v-if="job.finishedAt">
-              · done {{ formatTime(job.finishedAt) }}
+              · {{ $t('jobs.done') }} {{ formatTime(job.finishedAt) }}
             </template>
           </div>
         </div>
@@ -54,11 +54,11 @@
               style="width:100%"
             ></div>
           </div>
-          <div class="text-muted text-center" style="font-size:.65rem">{{ job.status }}</div>
+          <div class="text-muted text-center" style="font-size:.65rem">{{ $t('jobs.' + job.status) }}</div>
         </div>
 
         <span v-else class="badge" :class="badgeClass(job.status)" style="font-size:.65rem">
-          {{ job.status }}
+          {{ $t('common.' + job.status) }}
         </span>
       </div>
     </div>
@@ -67,6 +67,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { CoverageJob, JobStatus } from '../types'
 import { useNodesStore } from '../stores/nodes'
 import { useUIStore } from '../stores/ui'
@@ -74,6 +75,7 @@ import { useAuthStore } from '../stores/auth'
 
 defineProps<{ jobs: CoverageJob[] }>()
 
+const { t, locale } = useI18n()
 const nodesStore = useNodesStore()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
@@ -93,9 +95,9 @@ async function doRecomputeAll() {
   recomputingAll.value = true
   try {
     const result = await nodesStore.recomputeAll()
-    uiStore.showToast(`Queued coverage recomputation for ${result.nodes_queued} node(s).`, 'success')
-  } catch (e) {
-    uiStore.showToast(`Failed to trigger recompute all: ${e}`, 'danger')
+    uiStore.showToast(t('jobs.recompute_all_success', { count: result.nodes_queued }), 'success')
+  } catch (err) {
+    uiStore.showToast(t('jobs.recompute_all_failed', { err }), 'danger')
   } finally {
     recomputingAll.value = false
   }
@@ -122,8 +124,8 @@ function badgeClass(status: JobStatus): string {
 }
 
 function formatTime(d: Date): string {
-  return d.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' }) +
-    ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString(locale.value, { day: '2-digit', month: '2-digit' }) +
+    ' ' + d.toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' })
 }
 </script>
 
