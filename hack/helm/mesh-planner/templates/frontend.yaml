@@ -29,16 +29,11 @@ spec:
           env:
             - name: VITE_API_TARGET
               value: "http://{{ include "mesh-planner.name" . }}-backend:{{ .Values.backend.service.port }}"
-            - name: VITE_ZITADEL_AUTHORITY
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "mesh-planner.name" . }}-config
-                  key: VITE_ZITADEL_AUTHORITY
-            - name: VITE_ZITADEL_CLIENT_ID
+            - name: VITE_OIDC_CLIENT_ID
               valueFrom:
                 secretKeyRef:
                   name: {{ include "mesh-planner.name" . }}-secrets
-                  key: ZITADEL_CLIENT_ID
+                  key: OIDC_CLIENT_ID
           {{- if .Values.frontend.resources }}
           resources:
             {{- toYaml .Values.frontend.resources | nindent 12 }}

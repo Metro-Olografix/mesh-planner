@@ -8,6 +8,5 @@ metadata:
 data:
   POSTGRES_DB: {{ .Values.postgresql.auth.database | quote }}
   POSTGRES_USER: {{ .Values.postgresql.auth.username | quote }}
-  ZITADEL_DOMAIN: {{ .Values.zitadel.domain | quote }}
-  VITE_ZITADEL_AUTHORITY: {{ .Values.zitadel.domain | quote }}
+  OIDC_ISSUER: {{ .Values.zitadel.domain | quote }}
   LOG_LEVEL: {{ .Values.logLevel | quote }}
