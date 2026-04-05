@@ -18,6 +18,11 @@ backend:
     splatTiles:
       size: 10Gi
       storageClass: ""
+    customAssets:
+      # Set enabled: true and provide a size to create a PVC for custom logo/favicon.
+      enabled: false
+      size: 100Mi
+      storageClass: ""
 
 frontend:
   enabled: true

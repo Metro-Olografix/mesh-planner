@@ -1,3 +1,22 @@
+{{- if .Values.backend.storage.customAssets.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "mesh-planner.name" . }}-custom-assets
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "mesh-planner.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.backend.storage.customAssets.size }}
+  {{- if .Values.backend.storage.customAssets.storageClass }}
+  storageClassName: {{ .Values.backend.storage.customAssets.storageClass | quote }}
+  {{- end }}
+---
+{{- end }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -79,6 +98,11 @@ spec:
           volumeMounts:
             - name: splat-tiles
               mountPath: /app/.splat_tiles
+            {{- if .Values.backend.storage.customAssets.enabled }}
+            - name: custom-assets
+              mountPath: /app/custom
+              readOnly: false
+            {{- end }}
           {{- if .Values.backend.resources }}
           resources:
             {{- toYaml .Values.backend.resources | nindent 12 }}
@@ -93,6 +117,11 @@ spec:
         - name: splat-tiles
           persistentVolumeClaim:
             claimName: {{ include "mesh-planner.name" . }}-splat-tiles
+        {{- if .Values.backend.storage.customAssets.enabled }}
+        - name: custom-assets
+          persistentVolumeClaim:
+            claimName: {{ include "mesh-planner.name" . }}-custom-assets
+        {{- end }}
 ---
 apiVersion: v1
 kind: Service
