@@ -40,6 +40,10 @@ async def lifespan(app: FastAPI):
             "ALTER TABLE nodes ADD COLUMN IF NOT EXISTS "
             "lora_preset VARCHAR NOT NULL DEFAULT 'MEDIUM_FAST'"
         ))
+        await conn.execute(text(
+            "ALTER TABLE nodes ADD COLUMN IF NOT EXISTS "
+            "high_resolution BOOLEAN NOT NULL DEFAULT TRUE"
+        ))
         # Add 'draft' value to the nodestatus enum if it's a native PG enum
         await conn.execute(text(
             "DO $$ BEGIN "

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional, Literal
 import matplotlib.pyplot as plt
 
@@ -105,3 +105,11 @@ class CoveragePredictionRequest(BaseModel):
         False,
         description="Use optional 1-arcsecond / 30 meter resolution  terrain tiles instead of the default 3-arcsecond / 90 meter (default: False).",
     )
+
+    @model_validator(mode="after")
+    def check_dbm_range(self) -> "CoveragePredictionRequest":
+        if self.min_dbm >= self.max_dbm:
+            raise ValueError(
+                f"min_dbm ({self.min_dbm}) must be strictly less than max_dbm ({self.max_dbm})"
+            )
+        return self

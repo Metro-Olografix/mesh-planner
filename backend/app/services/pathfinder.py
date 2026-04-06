@@ -170,6 +170,8 @@ def build_snr_matrix(
         for j, rx in enumerate(graph_nodes):
             if i == j:
                 continue
+            if tx.freq_mhz != rx.freq_mhz:
+                continue   # nodes on different frequencies cannot communicate
             dist = haversine_m(tx.lat, tx.lon, rx.lat, rx.lon)
             friis_rx = friis_rx_dbm(tx.tx_dbm, tx.tx_gain_dbi, rx.rx_gain_dbi, tx.freq_mhz, dist)
 
@@ -221,9 +223,13 @@ def build_snr_matrix(
             snr = min(fwd_snr, rev_snr)
 
             # ── Reject links below LoRa demodulation threshold ───────────
+            # Check each direction against its own receiver's SF threshold:
+            # forward (TX→RX) must meet RX's SF, reverse (RX→TX) must meet TX's SF.
             rx_sf = LORA_PRESETS.get(rx.lora_preset, LORA_PRESETS[_DEFAULT_PRESET])["sf"]
-            min_snr = _LORA_MIN_SNR_DB.get(rx_sf, -20.0)
-            if snr < min_snr:
+            tx_sf = LORA_PRESETS.get(tx.lora_preset, LORA_PRESETS[_DEFAULT_PRESET])["sf"]
+            if fwd_snr < _LORA_MIN_SNR_DB.get(rx_sf, -20.0):
+                continue
+            if rev_snr < _LORA_MIN_SNR_DB.get(tx_sf, -20.0):
                 continue
 
             matrix[i][j] = round(snr, 2)

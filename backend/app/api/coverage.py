@@ -61,6 +61,7 @@ async def _run_splat(node_id: UUID) -> None:
             node.name, environment, clutter_m,
         )
 
+        high_res = getattr(node, "high_resolution", True)
         req = CoveragePredictionRequest(
             lat=node.lat,
             lon=node.lon,
@@ -76,7 +77,7 @@ async def _run_splat(node_id: UUID) -> None:
             colormap="plasma",
             min_dbm=hw.rx_sensitivity_dbm,
             max_dbm=hw.rx_sensitivity_dbm + COVERAGE_DYNAMIC_RANGE_DB,
-            high_resolution=False,
+            high_resolution=high_res,
         )
 
         cache = node.coverage

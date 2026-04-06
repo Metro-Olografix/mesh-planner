@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/nodes", tags=["nodes"])
 
 # Fields that invalidate the coverage cache when changed
-_RF_FIELDS = {"lat", "lon", "height_m", "hardware_id", "antenna_gain_dbi", "sim_radius_km", "environment", "lora_preset"}
+_RF_FIELDS = {"lat", "lon", "height_m", "hardware_id", "antenna_gain_dbi", "sim_radius_km", "environment", "lora_preset", "high_resolution"}
 
 
 

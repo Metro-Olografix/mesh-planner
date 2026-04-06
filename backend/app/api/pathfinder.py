@@ -101,6 +101,14 @@ async def find_path(
         if n.coverage and n.coverage.geotiff and not n.coverage.invalidated
     }
 
+    # Nodes whose coverage is still being computed — path uses Friis fallback
+    # for these, so results may be suboptimal.
+    nodes_processing = [
+        n for n in nodes
+        if n.coverage and n.coverage.status == "processing"
+        and not (n.coverage.geotiff and not n.coverage.invalidated)
+    ]
+
     logger.info(
         "Path request: %s → %s (%d nodes in graph)",
         src_node.name, dst_node.name, len(graph),
@@ -110,6 +118,14 @@ async def find_path(
         graph, matrix, src_idx=src_idx, dst_idx=dst_idx
     )
 
+    processing_warning = ""
+    if nodes_processing:
+        processing_names = ", ".join(n.name for n in nodes_processing)
+        processing_warning = (
+            f" (coverage still computing for: {processing_names}"
+            " — results may change once complete)"
+        )
+
     if path_indices is None:
         logger.info(
             "No path found between %s and %s",
@@ -118,7 +134,8 @@ async def find_path(
         return PathResult(
             found=False, hops=[], bottleneck_snr_db=None,
             total_relay_hops=0,
-            message=f"No viable path found between {src_node.name} and {dst_node.name}",
+            message=f"No viable path found between {src_node.name} and {dst_node.name}"
+                    + processing_warning,
         )
 
     hops: list[HopInfo] = []
@@ -150,5 +167,5 @@ async def find_path(
         hops=hops,
         bottleneck_snr_db=round(bottleneck, 1),
         total_relay_hops=relay_count,
-        message=msg,
+        message=msg + processing_warning,
     )

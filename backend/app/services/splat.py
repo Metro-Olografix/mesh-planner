@@ -129,9 +129,6 @@ class Splat:
             try:
                 logger.debug(f"Temporary directory created: {tmpdir}")
 
-                # FIXME: Eventually support high-resolution terrain data
-                request.high_resolution = False
-
                 # Set hard limit of 100 km radius
                 if request.radius > 100000:
                     logger.debug(f"User tried to set radius of {request.radius} meters, setting to 100 km.")
@@ -334,10 +331,16 @@ class Splat:
 
         try:
             # Create the .qth file content
+            # SPLAT! expects longitude in West-positive degrees (0–360).
+            # West (negative): abs(lon). East (positive): 360 - lon.
+            # Clamp 360.0 → 0.0 for the prime meridian edge case.
+            splat_lon = abs(longitude) if longitude < 0 else 360.0 - longitude
+            if splat_lon == 360.0:
+                splat_lon = 0.0
             contents = (
                 f"{name}\n"
                 f"{latitude:.6f}\n"
-                f"{abs(longitude) if longitude < 0 else 360 - longitude:.6f}\n"  # SPLAT! expects west longitude as a positive number.
+                f"{splat_lon:.6f}\n"
                 f"{elevation:.2f}\n"
             )
             logger.debug(f"Generated .qth file contents:\n{contents}")
@@ -482,7 +485,7 @@ class Splat:
         cmap_values = np.linspace(min_dbm, max_dbm, 255)
 
         # Map data values to RGB for visible colors
-        rgb_colors = list(cmap(cmap_norm(cmap_values))[:, :3] * 255).astype(int)
+        rgb_colors = (cmap(cmap_norm(cmap_values))[:, :3] * 255).astype(int)
         return rgb_colors
 
 

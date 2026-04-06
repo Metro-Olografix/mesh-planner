@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, String
+from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -33,6 +33,7 @@ class Node(Base):
     # LoRa modem preset: SHORT_FAST | SHORT_SLOW | MEDIUM_FAST | MEDIUM_SLOW |
     #                    LONG_FAST | LONG_SLOW | VERY_LONG_SLOW
     lora_preset = Column(String, nullable=False, server_default="MEDIUM_FAST", default="MEDIUM_FAST")
+    high_resolution = Column(Boolean, nullable=False, server_default="true", default=True)
     notes = Column(String, nullable=True)
     created_by = Column(String, nullable=False)              # OAuth subject
     created_at = Column(DateTime, default=datetime.utcnow)
