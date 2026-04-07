@@ -154,10 +154,47 @@ All settings are read from `.env` (copied from `.env.example`).
 | `OIDC_CLIENT_ID` | ✅ | OAuth client ID of the SPA application |
 | `OIDC_AUDIENCE` | — | Enforce `aud` claim verification (leave empty for Zitadel) |
 | `PUBLIC_ACCESS` | — | `true` to allow unauthenticated read-only access (default: `false`) |
+| `CORS_ORIGINS` | — | Comma-separated allowed origins, e.g. `https://mesh.example.com` (default: `http://localhost:5173`) |
 | `LOG_LEVEL` | — | `DEBUG` / `INFO` / `WARNING` / `ERROR` (default: `INFO`) |
 | `SPLAT_PATH` | — | Path to SPLAT! binaries (default: `/app`) |
 | `TILE_CACHE_DIR` | — | Terrain tile cache directory (default: `/app/.splat_tiles`) |
 | `TILE_CACHE_GB` | — | Maximum terrain tile cache size in GB (default: `2.0`) |
+
+---
+
+## 🗃️ Database Migrations
+
+Schema changes are managed with **Alembic**. Migrations run automatically on startup (`alembic upgrade head`).
+
+To create a new migration after modifying SQLAlchemy models:
+```bash
+docker compose exec backend alembic revision --autogenerate -m "description"
+```
+
+To manually apply or inspect migrations:
+```bash
+docker compose exec backend alembic upgrade head     # apply all pending
+docker compose exec backend alembic current          # show current revision
+docker compose exec backend alembic history          # list all revisions
+```
+
+**Existing deployments** upgrading from the pre-Alembic version should stamp the database first:
+```bash
+docker compose exec backend alembic stamp head
+```
+
+---
+
+## 🔄 CI/CD
+
+A GitHub Actions pipeline (`.github/workflows/ci.yml`) runs on every push and pull request to `main`:
+
+| Job | Trigger | Description |
+|---|---|---|
+| **lint** | push + PR | `ruff check` and `ruff format --check` on `backend/` |
+| **test** | push + PR | `pytest` against a PostgreSQL service container |
+| **docker-build** | PR only | Validates both Dockerfiles build successfully |
+| **docker-publish** | push to `main` | Builds and pushes images to `ghcr.io` (`mesh-planner-backend`, `mesh-planner-frontend`) |
 
 ---
 
