@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     splat_path: str = "/app"
     tile_cache_dir: str = "/app/.splat_tiles"
     tile_cache_gb: float = 2.0
+    cors_origins: str = ""            # comma-separated allowed origins (default: localhost:5173)
     log_level: str = "INFO"           # DEBUG | INFO | WARNING | ERROR
 
     class Config:
