@@ -3,6 +3,7 @@ OIDC JWT validation via OIDC discovery + JWKS.
 Tokens are standard RS256-signed JWTs. Works with any OIDC-compliant provider
 (Zitadel, Keycloak, Auth0, Okta, etc.).
 """
+import asyncio
 import logging
 from typing import Any
 
@@ -22,36 +23,43 @@ _jwks_cache: dict | None = None
 # Cache display names by sub so we only hit UserInfo once per process lifetime
 _display_name_cache: dict[str, str] = {}
 
+_discovery_lock = asyncio.Lock()
+_jwks_lock = asyncio.Lock()
+_display_name_lock = asyncio.Lock()
+
 
 async def _get_discovery() -> dict:
     global _discovery_cache
     if _discovery_cache is not None:
         return _discovery_cache
-    url = f"{settings.oidc_issuer}/.well-known/openid-configuration"
-    logger.info("Fetching OIDC discovery document from %s", url)
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            _discovery_cache = resp.json()
-        logger.info("OIDC discovery document fetched successfully")
-    except httpx.ConnectTimeout:
-        logger.error(
-            "Timeout connecting to OIDC provider at %s"
-            " — is OIDC_ISSUER reachable from the container?",
-            url,
-        )
-        raise
-    except httpx.HTTPStatusError as exc:
-        logger.error(
-            "OIDC discovery returned HTTP %s: %s",
-            exc.response.status_code,
-            url,
-        )
-        raise
-    except Exception as exc:
-        logger.error("Failed to fetch OIDC discovery from %s: %s", url, exc)
-        raise
+    async with _discovery_lock:
+        if _discovery_cache is not None:
+            return _discovery_cache
+        url = f"{settings.oidc_issuer}/.well-known/openid-configuration"
+        logger.info("Fetching OIDC discovery document from %s", url)
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                _discovery_cache = resp.json()
+            logger.info("OIDC discovery document fetched successfully")
+        except httpx.ConnectTimeout:
+            logger.error(
+                "Timeout connecting to OIDC provider at %s"
+                " — is OIDC_ISSUER reachable from the container?",
+                url,
+            )
+            raise
+        except httpx.HTTPStatusError as exc:
+            logger.error(
+                "OIDC discovery returned HTTP %s: %s",
+                exc.response.status_code,
+                url,
+            )
+            raise
+        except Exception as exc:
+            logger.error("Failed to fetch OIDC discovery from %s: %s", url, exc)
+            raise
     return _discovery_cache
 
 
@@ -59,21 +67,24 @@ async def _get_jwks() -> dict:
     global _jwks_cache
     if _jwks_cache is not None:
         return _jwks_cache
-    discovery = await _get_discovery()
-    jwks_uri = discovery["jwks_uri"]
-    logger.info("Fetching JWKS from %s", jwks_uri)
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            jwks_resp = await client.get(jwks_uri)
-            jwks_resp.raise_for_status()
-            _jwks_cache = jwks_resp.json()
-        logger.info(
-            "JWKS fetched and cached (%d keys)",
-            len(_jwks_cache.get("keys", [])),
-        )
-    except Exception as exc:
-        logger.error("Failed to fetch JWKS from %s: %s", jwks_uri, exc)
-        raise
+    async with _jwks_lock:
+        if _jwks_cache is not None:
+            return _jwks_cache
+        discovery = await _get_discovery()
+        jwks_uri = discovery["jwks_uri"]
+        logger.info("Fetching JWKS from %s", jwks_uri)
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                jwks_resp = await client.get(jwks_uri)
+                jwks_resp.raise_for_status()
+                _jwks_cache = jwks_resp.json()
+            logger.info(
+                "JWKS fetched and cached (%d keys)",
+                len(_jwks_cache.get("keys", [])),
+            )
+        except Exception as exc:
+            logger.error("Failed to fetch JWKS from %s: %s", jwks_uri, exc)
+            raise
     return _jwks_cache
 
 
@@ -99,28 +110,31 @@ async def get_display_name(token: str, payload: dict) -> str:
         return _display_name_cache[sub]
 
     # 3. Call the UserInfo endpoint with the bearer token
-    try:
-        discovery = await _get_discovery()
-        userinfo_url = discovery["userinfo_endpoint"]
-        logger.debug("Fetching UserInfo for sub=%s", sub)
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(
-                userinfo_url,
-                headers={"Authorization": f"Bearer {token}"},
+    async with _display_name_lock:
+        if sub in _display_name_cache:
+            return _display_name_cache[sub]
+        try:
+            discovery = await _get_discovery()
+            userinfo_url = discovery["userinfo_endpoint"]
+            logger.debug("Fetching UserInfo for sub=%s", sub)
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(
+                    userinfo_url,
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+                resp.raise_for_status()
+                info = resp.json()
+            name = (
+                info.get("preferred_username")
+                or info.get("name")
+                or info.get("email")
+                or sub
             )
-            resp.raise_for_status()
-            info = resp.json()
-        name = (
-            info.get("preferred_username")
-            or info.get("name")
-            or info.get("email")
-            or sub
-        )
-    except Exception as exc:
-        logger.warning("UserInfo lookup failed for sub=%s: %s", sub, exc)
-        name = sub
+        except Exception as exc:
+            logger.warning("UserInfo lookup failed for sub=%s: %s", sub, exc)
+            name = sub
 
-    _display_name_cache[sub] = name
+        _display_name_cache[sub] = name
     return name
 
 

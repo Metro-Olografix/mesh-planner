@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import math
+import threading
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,7 @@ _WORLDCOVER_BUCKET_URL_ALT = (
 
 # Simple in-process cache: (rounded lat, rounded lon) → height
 _cache: dict[tuple[float, float], float] = {}
+_cache_lock = threading.Lock()
 
 
 def _tile_name(lat: float, lon: float) -> str:
@@ -144,10 +146,12 @@ def resolve_clutter_height(environment: str, lat: float, lon: float) -> float:
         return ENVIRONMENT_HEIGHTS.get(environment, 5.0)
 
     key = (round(lat, 4), round(lon, 4))
-    if key in _cache:
-        return _cache[key]
+    with _cache_lock:
+        if key in _cache:
+            return _cache[key]
 
     height = _sample_worldcover(lat, lon)
     result = height if height is not None else 5.0   # suburban as safe default
-    _cache[key] = result
+    with _cache_lock:
+        _cache[key] = result
     return result
