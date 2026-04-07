@@ -1,15 +1,18 @@
+import asyncio
 import logging
 import mimetypes
 from contextlib import asynccontextmanager
+from functools import partial
 from pathlib import Path
 
+from alembic import command
+from alembic.config import Config as AlembicConfig
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
-from sqlalchemy import text
 
 from app.config import settings
-from app.database import AsyncSessionLocal, Base, engine
+from app.database import AsyncSessionLocal, engine
 from app.services.hardware_seed import seed_hardware
 from app.api import coverage, events, hardware, nodes, pathfinder
 import app.models  # noqa: F401 — registers models with Base.metadata
@@ -23,34 +26,11 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(
-        "Starting up — creating tables and seeding hardware profiles..."
+        "Starting up — running migrations and seeding hardware profiles..."
     )
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        # Lightweight migrations: add columns introduced after initial deploy
-        await conn.execute(text(
-            "ALTER TABLE nodes ADD COLUMN IF NOT EXISTS "
-            "sim_radius_km FLOAT NOT NULL DEFAULT 10.0"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE nodes ADD COLUMN IF NOT EXISTS "
-            "environment VARCHAR NOT NULL DEFAULT 'auto'"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE nodes ADD COLUMN IF NOT EXISTS "
-            "lora_preset VARCHAR NOT NULL DEFAULT 'MEDIUM_FAST'"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE nodes ADD COLUMN IF NOT EXISTS "
-            "high_resolution BOOLEAN NOT NULL DEFAULT TRUE"
-        ))
-        # Add 'draft' value to the nodestatus enum if it's a native PG enum
-        await conn.execute(text(
-            "DO $$ BEGIN "
-            "  ALTER TYPE nodestatus ADD VALUE IF NOT EXISTS 'draft'; "
-            "EXCEPTION WHEN undefined_object THEN NULL; "
-            "END $$"
-        ))
+    alembic_cfg = AlembicConfig("alembic.ini")
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, partial(command.upgrade, alembic_cfg, "head"))
     async with AsyncSessionLocal() as db:
         await seed_hardware(db)
     logger.info("Ready.")
@@ -64,9 +44,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+_origins = (
+    [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+    if settings.cors_origins
+    else ["http://localhost:5173"]
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
