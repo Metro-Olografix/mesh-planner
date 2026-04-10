@@ -8,6 +8,7 @@ A professional, collaborative **Meshtastic node deployment planner** for the Met
 
 | Feature | Description |
 |---|---|
+| **🧪 Coverage Tester** | Public `/try` wizard — anyone can simulate node coverage without signing up. No data stored. |
 | **📡 Node Management** | Add, edit, and delete nodes with granular control over RF parameters, height, and equipment. |
 | **📈 Deployment Workflow** | Lifecycle management for nodes: `Draft` (private), `Planned`, and `Deployed`. |
 | **🌍 RF Propagation** | Per-node **SPLAT!** simulations (ITM model) rendered as GeoTIFF overlays. |
@@ -113,6 +114,43 @@ For all other providers (Auth0, Okta, Keycloak), set `OIDC_AUDIENCE` to your API
 
 ---
 
+## 🧪 Coverage Tester (`/try`)
+
+The `/try` page lets anyone — no account required — simulate their LoRa node coverage in a guided 4-step wizard. It is designed for people with no prior LoRa knowledge.
+
+| Step | What happens |
+|---|---|
+| **1. Location** | Click the map to drop a pin anywhere in the world. |
+| **2. Device** | Pick from the full hardware catalogue. Recommended devices (Heltec V3, RAK4631) are highlighted. |
+| **3. Setup** | Set antenna height (with floor-based hints — each floor ≈ 3 m), surrounding environment, and a simplified Fast / Balanced / Long Range preset. |
+| **4. Results** | A SPLAT! simulation runs server-side (~10–15 s) and the coverage overlay is displayed with a smooth zoom animation. |
+
+Results include a **shareable link** that encodes all settings as URL query parameters — opening the link re-runs the simulation automatically. A locale-aware **Join the network** CTA links to the Metro Olografix membership page.
+
+### `/try` endpoint details
+
+`POST /api/try/simulate` — fully public, no authentication needed.
+
+| Constraint | Value |
+|---|---|
+| Max simulation radius | `TRY_MAX_RADIUS_KM` (default 3 km) |
+| Resolution | Standard only (90 m / 3-arcsecond terrain tiles) |
+| Persistence | None — GeoTIFF is returned directly, never stored in the database |
+| Rate limit | `TRY_RATE_LIMIT_PER_HOUR` requests per IP per hour (default 6) |
+| Concurrency | `TRY_MAX_CONCURRENT` simultaneous SPLAT! processes (default 2) |
+
+Three additional environment variables control the endpoint:
+
+| Variable | Default | Description |
+|---|---|---|
+| `TRY_RATE_LIMIT_PER_HOUR` | `6` | Max simulations per IP per hour |
+| `TRY_MAX_RADIUS_KM` | `3.0` | Coverage radius cap in km |
+| `TRY_MAX_CONCURRENT` | `2` | Max simultaneous SPLAT! processes |
+
+> **Note:** Rate limiting is in-process and does not coordinate across multiple workers or replicas. For multi-instance deployments, replace the in-memory counter with a shared Redis store.
+
+---
+
 ## 🌐 Public Read-Only Mode
 
 When `PUBLIC_ACCESS=true`, unauthenticated visitors can view the map without logging in:
@@ -159,6 +197,9 @@ All settings are read from `.env` (copied from `.env.example`).
 | `SPLAT_PATH` | — | Path to SPLAT! binaries (default: `/app`) |
 | `TILE_CACHE_DIR` | — | Terrain tile cache directory (default: `/app/.splat_tiles`) |
 | `TILE_CACHE_GB` | — | Maximum terrain tile cache size in GB (default: `2.0`) |
+| `TRY_RATE_LIMIT_PER_HOUR` | — | Max `/try` simulations per IP per hour (default: `6`) |
+| `TRY_MAX_RADIUS_KM` | — | Coverage radius cap for `/try` simulations in km (default: `3.0`) |
+| `TRY_MAX_CONCURRENT` | — | Max simultaneous SPLAT! processes on `/try` (default: `2`) |
 
 ---
 
