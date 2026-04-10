@@ -39,7 +39,7 @@ class Splat:
         cache_dir: str = ".splat_tiles",
         cache_size_gb: float = 1.0,
         bucket_name: str = "elevation-tiles-prod",
-        bucket_prefix:str = "v2/skadi"
+        bucket_prefix: str = "v2/skadi",
     ):
         """
         SPLAT! wrapper class. Provides methods for generating SPLAT! RF coverage maps in GeoTIFF format.
@@ -129,51 +129,68 @@ class Splat:
             try:
                 logger.debug(f"Temporary directory created: {tmpdir}")
 
-                # FIXME: Eventually support high-resolution terrain data
-                request.high_resolution = False
-
                 # Set hard limit of 100 km radius
                 if request.radius > 100000:
-                    logger.debug(f"User tried to set radius of {request.radius} meters, setting to 100 km.")
+                    logger.debug(
+                        f"User tried to set radius of {request.radius} meters, setting to 100 km."
+                    )
                     request.radius = 100000
 
                 # determine the required terrain tiles
-                required_tiles = Splat._calculate_required_terrain_tiles(request.lat, request.lon, request.radius)
+                required_tiles = Splat._calculate_required_terrain_tiles(
+                    request.lat, request.lon, request.radius
+                )
 
                 # download and convert terrain tiles to SPLAT! sdf
                 for tile_name, sdf_name, sdf_hd_name in required_tiles:
                     tile_data = self._download_terrain_tile(tile_name)
-                    sdf_data = self._convert_hgt_to_sdf(tile_data, tile_name, high_resolution=request.high_resolution)
+                    sdf_data = self._convert_hgt_to_sdf(
+                        tile_data, tile_name, high_resolution=request.high_resolution
+                    )
 
-                    with open(os.path.join(tmpdir, sdf_hd_name if request.high_resolution else sdf_name), "wb") as sdf_file:
+                    with open(
+                        os.path.join(
+                            tmpdir, sdf_hd_name if request.high_resolution else sdf_name
+                        ),
+                        "wb",
+                    ) as sdf_file:
                         sdf_file.write(sdf_data)
 
                 # write transmitter / qth file
                 with open(os.path.join(tmpdir, "tx.qth"), "wb") as qth_file:
-                    qth_file.write(Splat._create_splat_qth("tx",request.lat,request.lon,request.tx_height))
+                    qth_file.write(
+                        Splat._create_splat_qth(
+                            "tx", request.lat, request.lon, request.tx_height
+                        )
+                    )
 
                 # write model parameter / lrp file
-                with open(os.path.join(tmpdir,"splat.lrp"), "wb") as lrp_file:
-                    lrp_file.write(Splat._create_splat_lrp(
-                        ground_dielectric=request.ground_dielectric,
-                        ground_conductivity=request.ground_conductivity,
-                        atmosphere_bending=request.atmosphere_bending,
-                        frequency_mhz=request.frequency_mhz,
-                        radio_climate=request.radio_climate,
-                        polarization=request.polarization,
-                        situation_fraction=request.situation_fraction,
-                        time_fraction=request.time_fraction,
-                        tx_power=request.tx_power,
-                        tx_gain=request.tx_gain,
-                        system_loss=request.system_loss))
+                with open(os.path.join(tmpdir, "splat.lrp"), "wb") as lrp_file:
+                    lrp_file.write(
+                        Splat._create_splat_lrp(
+                            ground_dielectric=request.ground_dielectric,
+                            ground_conductivity=request.ground_conductivity,
+                            atmosphere_bending=request.atmosphere_bending,
+                            frequency_mhz=request.frequency_mhz,
+                            radio_climate=request.radio_climate,
+                            polarization=request.polarization,
+                            situation_fraction=request.situation_fraction,
+                            time_fraction=request.time_fraction,
+                            tx_power=request.tx_power,
+                            tx_gain=request.tx_gain,
+                            system_loss=request.system_loss,
+                        )
+                    )
 
                 # write colorbar / dcf file
                 with open(os.path.join(tmpdir, "splat.dcf"), "wb") as dcf_file:
-                    dcf_file.write(Splat._create_splat_dcf(
-                        colormap_name=request.colormap,
-                        min_dbm=request.min_dbm,
-                        max_dbm=request.max_dbm
-                    ))
+                    dcf_file.write(
+                        Splat._create_splat_dcf(
+                            colormap_name=request.colormap,
+                            min_dbm=request.min_dbm,
+                            max_dbm=request.max_dbm,
+                        )
+                    )
 
                 logger.debug(f"Contents of {tmpdir}: {os.listdir(tmpdir)}")
 
@@ -201,8 +218,8 @@ class Splat:
                     "-db",
                     str(request.signal_threshold),
                     "-kml",
-                    "-olditm"
-                ] # flag "olditm" uses the standard ITM model instead of ITWOM, which has produced unrealistic results.
+                    "-olditm",
+                ]  # flag "olditm" uses the standard ITM model instead of ITWOM, which has produced unrealistic results.
                 logger.debug(f"Executing SPLAT! command: {' '.join(splat_command)}")
 
                 splat_result = subprocess.run(
@@ -229,7 +246,13 @@ class Splat:
                     with open(os.path.join(tmpdir, "output.kml"), "rb") as kml_file:
                         ppm_data = ppm_file.read()
                         kml_data = kml_file.read()
-                        geotiff_data = Splat._create_splat_geotiff(ppm_data,kml_data,request.colormap,request.min_dbm,request.max_dbm)
+                        geotiff_data = Splat._create_splat_geotiff(
+                            ppm_data,
+                            kml_data,
+                            request.colormap,
+                            request.min_dbm,
+                            request.max_dbm,
+                        )
 
                 logger.info("SPLAT! coverage prediction completed successfully.")
                 return geotiff_data
@@ -240,7 +263,7 @@ class Splat:
 
     @staticmethod
     def _calculate_required_terrain_tiles(
-            lat: float, lon: float, radius: float
+        lat: float, lon: float, radius: float
     ) -> List[Tuple[str, str, str]]:
         """
         Determine the set of required terrain tiles for the specified area and their corresponding .sdf / -hd.sdf
@@ -301,15 +324,13 @@ class Splat:
                 ew = "E" if lon_tile >= 0 else "W"
                 tile_name = f"{ns}{abs(lat_tile):02d}{ew}{abs(lon_tile):03d}.hgt.gz"
 
-                # .sdf file boundaries
-                lat_start = lat_tile
-                lon_start = lon_tile
-                lat_end = lat_start + 1
-                lon_end = lon_start + 1
-
                 # Generate .sdf file names
-                sdf_filename = Splat._hgt_filename_to_sdf_filename(tile_name, high_resolution = False)
-                sdf_hd_filename = Splat._hgt_filename_to_sdf_filename(tile_name, high_resolution = True)
+                sdf_filename = Splat._hgt_filename_to_sdf_filename(
+                    tile_name, high_resolution=False
+                )
+                sdf_hd_filename = Splat._hgt_filename_to_sdf_filename(
+                    tile_name, high_resolution=True
+                )
                 tile_names.append((tile_name, sdf_filename, sdf_hd_filename))
 
         logger.debug("required tile names are: ")
@@ -317,7 +338,9 @@ class Splat:
         return tile_names
 
     @staticmethod
-    def _create_splat_qth(name: str, latitude: float, longitude: float, elevation: float) -> bytes:
+    def _create_splat_qth(
+        name: str, latitude: float, longitude: float, elevation: float
+    ) -> bytes:
         """
         Generate the contents of a SPLAT! .qth file describing a transmitter or receiver site.
 
@@ -334,40 +357,40 @@ class Splat:
 
         try:
             # Create the .qth file content
-            contents = (
-                f"{name}\n"
-                f"{latitude:.6f}\n"
-                f"{abs(longitude) if longitude < 0 else 360 - longitude:.6f}\n"  # SPLAT! expects west longitude as a positive number.
-                f"{elevation:.2f}\n"
-            )
+            # SPLAT! expects longitude in West-positive degrees (0–360).
+            # West (negative): abs(lon). East (positive): 360 - lon.
+            # Clamp 360.0 → 0.0 for the prime meridian edge case.
+            splat_lon = abs(longitude) if longitude < 0 else 360.0 - longitude
+            if splat_lon == 360.0:
+                splat_lon = 0.0
+            contents = f"{name}\n{latitude:.6f}\n{splat_lon:.6f}\n{elevation:.2f}\n"
             logger.debug(f"Generated .qth file contents:\n{contents}")
-            return contents.encode('utf-8')  # Return as bytes
+            return contents.encode("utf-8")  # Return as bytes
         except Exception as e:
             logger.error(f"Error generating .qth file content: {e}")
             raise ValueError(f"Failed to generate .qth content: {e}")
 
     @staticmethod
     def _create_splat_lrp(
-            ground_dielectric: float,
-            ground_conductivity: float,
-            atmosphere_bending: float,
-            frequency_mhz: float,
-            radio_climate: Literal[
-                "equatorial",
-                "continental_subtropical",
-                "maritime_subtropical",
-                "desert",
-                "continental_temperate",
-                "maritime_temperate_land",
-                "maritime_temperate_sea",
-            ],
-            polarization: Literal["horizontal", "vertical"],
-            situation_fraction: float,
-            time_fraction: float,
-            tx_power: float,
-            tx_gain: float,
-            system_loss: float,
-
+        ground_dielectric: float,
+        ground_conductivity: float,
+        atmosphere_bending: float,
+        frequency_mhz: float,
+        radio_climate: Literal[
+            "equatorial",
+            "continental_subtropical",
+            "maritime_subtropical",
+            "desert",
+            "continental_temperate",
+            "maritime_temperate_land",
+            "maritime_temperate_sea",
+        ],
+        polarization: Literal["horizontal", "vertical"],
+        situation_fraction: float,
+        time_fraction: float,
+        tx_power: float,
+        tx_gain: float,
+        system_loss: float,
     ) -> bytes:
         """
         Generate the contents of a SPLAT! .lrp file describing environment and propagation parameters.
@@ -423,15 +446,13 @@ class Splat:
                 f"{erp_watts:.2f}  ; ERP in Watts\n"
             )
             logger.debug(f"Generated .lrp file contents:\n{contents}")
-            return contents.encode('utf-8')  # Return as bytes
+            return contents.encode("utf-8")  # Return as bytes
         except Exception as e:
             logger.error(f"Error generating .lrp file content: {e}")
             raise
 
     @staticmethod
-    def _create_splat_dcf(
-            colormap_name: str, min_dbm: float, max_dbm: float
-    ) -> bytes:
+    def _create_splat_dcf(colormap_name: str, min_dbm: float, max_dbm: float) -> bytes:
         """
         Generate the content of a SPLAT! .dcf file controlling the signal level contours
         using the specified Matplotlib color map.
@@ -451,7 +472,9 @@ class Splat:
         try:
             # Generate color map values and normalization
             cmap = plt.get_cmap(colormap_name)
-            cmap_values = np.linspace(max_dbm, min_dbm, 32)  # SPLAT! supports up to 32 levels
+            cmap_values = np.linspace(
+                max_dbm, min_dbm, 32
+            )  # SPLAT! supports up to 32 levels
             cmap_norm = plt.Normalize(vmin=min_dbm, vmax=max_dbm)
 
             # Generate RGB values
@@ -478,22 +501,23 @@ class Splat:
     ) -> list:
         """Generate a list of RGB color values corresponding to the color map, min and max RSSI values in dBm."""
         cmap = plt.get_cmap(colormap_name, 256)  # colormap with 256 levels
-        cmap_norm = plt.Normalize(vmin=min_dbm, vmax=max_dbm)  # Normalize based on dBm range
+        cmap_norm = plt.Normalize(
+            vmin=min_dbm, vmax=max_dbm
+        )  # Normalize based on dBm range
         cmap_values = np.linspace(min_dbm, max_dbm, 255)
 
         # Map data values to RGB for visible colors
-        rgb_colors = list(cmap(cmap_norm(cmap_values))[:, :3] * 255).astype(int)
+        rgb_colors = (cmap(cmap_norm(cmap_values))[:, :3] * 255).astype(int)
         return rgb_colors
-
 
     @staticmethod
     def _create_splat_geotiff(
-            ppm_bytes: bytes,
-            kml_bytes: bytes,
-            colormap_name: str,
-            min_dbm: float,
-            max_dbm: float,
-            null_value: int = 255  # Define the null value for transparency
+        ppm_bytes: bytes,
+        kml_bytes: bytes,
+        colormap_name: str,
+        min_dbm: float,
+        max_dbm: float,
+        null_value: int = 255,  # Define the null value for transparency
     ) -> bytes:
         """
         Generate GeoTIFF file content from SPLAT! PPM and KML data, with transparency for null areas.
@@ -546,25 +570,27 @@ class Splat:
             cmap = plt.get_cmap(colormap_name, 256)
             cmap_norm = plt.Normalize(vmin=min_dbm, vmax=max_dbm)
             cmap_values = np.linspace(min_dbm, max_dbm, 255)
-            rgb_colors = (cmap(cmap_norm(cmap_values))[:, :3] * 255).astype(np.uint8)  # (255, 3)
+            rgb_colors = (cmap(cmap_norm(cmap_values))[:, :3] * 255).astype(
+                np.uint8
+            )  # (255, 3)
 
             # Reverse-map each RGB pixel to the nearest colormap index.
             # Process in chunks to keep memory bounded.
             h, w, _ = img_rgb.shape
             img_flat = img_rgb.reshape(-1, 3).astype(np.float32)  # (N, 3)
-            rgb_lut = rgb_colors.astype(np.float32)                # (255, 3)
-            lut_sq = np.sum(rgb_lut ** 2, axis=1)                  # (255,)
+            rgb_lut = rgb_colors.astype(np.float32)  # (255, 3)
+            lut_sq = np.sum(rgb_lut**2, axis=1)  # (255,)
 
             CHUNK = 50_000
             img_idx = np.empty(h * w, dtype=np.uint8)
             for start in range(0, h * w, CHUNK):
                 end = min(start + CHUNK, h * w)
-                chunk = img_flat[start:end]                        # (C, 3)
+                chunk = img_flat[start:end]  # (C, 3)
                 # Squared Euclidean distance: ||a-b||² = ||a||² - 2a·b + ||b||²
                 dists = (
-                    np.sum(chunk ** 2, axis=1, keepdims=True)      # (C, 1)
-                    - 2.0 * chunk @ rgb_lut.T                      # (C, 255)
-                    + lut_sq[np.newaxis, :]                         # (1, 255)
+                    np.sum(chunk**2, axis=1, keepdims=True)  # (C, 1)
+                    - 2.0 * chunk @ rgb_lut.T  # (C, 255)
+                    + lut_sq[np.newaxis, :]  # (1, 255)
                 )
                 best = np.argmin(dists, axis=1).astype(np.uint8)
                 min_dist = np.min(dists, axis=1)
@@ -587,18 +613,18 @@ class Splat:
             # Write GeoTIFF to memory
             with io.BytesIO() as buffer:
                 with rasterio.open(
-                        buffer,
-                        "w",
-                        driver="GTiff",
-                        height=height,
-                        width=width,
-                        count=1,  # Single-band data
-                        dtype="uint8",
-                        crs="EPSG:4326",
-                        transform=transform,
-                        photometric="palette",  # Colormap interpretation
-                        compress="lzw",
-                        nodata=no_data_value,  # Set NoData value
+                    buffer,
+                    "w",
+                    driver="GTiff",
+                    height=height,
+                    width=width,
+                    count=1,  # Single-band data
+                    dtype="uint8",
+                    crs="EPSG:4326",
+                    transform=transform,
+                    photometric="palette",  # Colormap interpretation
+                    compress="lzw",
+                    nodata=no_data_value,  # Set NoData value
                 ) as dst:
                     dst.write(img_array, 1)  # Write the raster data
                     dst.write_colormap(1, gdal_colormap)  # Attach the colormap
@@ -640,36 +666,46 @@ class Splat:
         logger.info(f"Downloading {tile_name} from {self.bucket_name}/{s3_key}...")
         try:
             obj = self.s3.get_object(Bucket=self.bucket_name, Key=s3_key)
-            tile_data = obj['Body'].read()
+            tile_data = obj["Body"].read()
             # Store the tile in the cache
             self.tile_cache[tile_name] = tile_data
             return tile_data
         except ClientError as e:
-            if e.response['Error']['Code'] == 'NoSuchKey':
-                logger.info(f"Tile {tile_name} not found in S3 bucket, trying to download V1 SRTM data instead: {e}")
+            if e.response["Error"]["Code"] == "NoSuchKey":
+                logger.info(
+                    f"Tile {tile_name} not found in S3 bucket, trying to download V1 SRTM data instead: {e}"
+                )
                 s3_key = f"skadi/{tile_dir_prefix}/{tile_name}"
                 obj = self.s3.get_object(Bucket=self.bucket_name, Key=s3_key)
-                tile_data = obj['Body'].read()
+                tile_data = obj["Body"].read()
                 # Store the tile in the cache
                 self.tile_cache[tile_name] = tile_data
                 return tile_data
             else:
-                logger.error(f"Failed to download {tile_name} from S3 due to ClientError: {e}")
+                logger.error(
+                    f"Failed to download {tile_name} from S3 due to ClientError: {e}"
+                )
                 raise
         except Exception as e:
             logger.error(f"Failed to download {tile_name} from S3: {e}")
             raise
 
     @staticmethod
-    def _hgt_filename_to_sdf_filename(hgt_filename: str, high_resolution: bool = False) -> str:
-            """ helper method to get the expected SPLAT! .sdf filename from the .hgt.gz terrain tile."""
-            lat = int(hgt_filename[1:3]) * (1 if hgt_filename[0] == 'N' else -1)
-            min_lon = int(hgt_filename[4:7]) - (-1 if hgt_filename[3] == 'E' else 1) # fix off-by-one error in eastern hemisphere
-            min_lon = 360 - min_lon if hgt_filename[3] == 'E' else min_lon
-            max_lon = 0 if min_lon == 359 else min_lon + 1
-            return f"{lat}:{lat + 1}:{min_lon}:{max_lon}{'-hd.sdf' if high_resolution else '.sdf'}"
+    def _hgt_filename_to_sdf_filename(
+        hgt_filename: str, high_resolution: bool = False
+    ) -> str:
+        """helper method to get the expected SPLAT! .sdf filename from the .hgt.gz terrain tile."""
+        lat = int(hgt_filename[1:3]) * (1 if hgt_filename[0] == "N" else -1)
+        min_lon = int(hgt_filename[4:7]) - (
+            -1 if hgt_filename[3] == "E" else 1
+        )  # fix off-by-one error in eastern hemisphere
+        min_lon = 360 - min_lon if hgt_filename[3] == "E" else min_lon
+        max_lon = 0 if min_lon == 359 else min_lon + 1
+        return f"{lat}:{lat + 1}:{min_lon}:{max_lon}{'-hd.sdf' if high_resolution else '.sdf'}"
 
-    def _convert_hgt_to_sdf(self, tile: bytes, tile_name: str, high_resolution: bool = False) -> bytes:
+    def _convert_hgt_to_sdf(
+        self, tile: bytes, tile_name: str, high_resolution: bool = False
+    ) -> bytes:
         """
         Converts a .hgt.gz terrain tile (provided as bytes) to a SPLAT! .sdf or -hd.sdf file.
 
@@ -710,19 +746,25 @@ class Splat:
                 # Downsample to 3-arcsecond resolution if not in high-resolution mode
                 if not high_resolution:
                     try:
-                        logger.info(f"Downsampling {hgt_path} to 3-arcsecond resolution.")
+                        logger.info(
+                            f"Downsampling {hgt_path} to 3-arcsecond resolution."
+                        )
                         with rasterio.open(hgt_path) as src:
                             # Apply a scaling factor to transform for 3-arcsecond resolution
-                            scale_factor = 3  # 3-arcsecond is 3 times coarser than 1-arcsecond
-                            transform = src.transform * Affine.scale(scale_factor, scale_factor)
+                            scale_factor = (
+                                3  # 3-arcsecond is 3 times coarser than 1-arcsecond
+                            )
+                            transform = src.transform * Affine.scale(
+                                scale_factor, scale_factor
+                            )
 
                             # Resample data to 3-arcsecond resolution
                             data = src.read(
                                 # 3-arcsecond SRTM tiles always have dimensions of 1201x1201 pixels.
                                 out_shape=(
                                     src.count,  # Number of bands
-                                    1201,   # Downsampled height
-                                    1201,   # Downsampled width
+                                    1201,  # Downsampled height
+                                    1201,  # Downsampled width
                                 ),
                                 resampling=Resampling.average,
                             )
@@ -747,7 +789,9 @@ class Splat:
                         raise RuntimeError(f"Downsampling error for {hgt_path}: {e}")
 
                 # Call srtm2sdf or srtm2sdf-hd in the temporary directory
-                cmd = self.srtm2sdf_hd_binary if high_resolution else self.srtm2sdf_binary
+                cmd = (
+                    self.srtm2sdf_hd_binary if high_resolution else self.srtm2sdf_binary
+                )
                 logger.info(f"Converting {hgt_path} to {sdf_filename} using {cmd}.")
                 result = subprocess.run(
                     [cmd, os.path.basename(tile_name.replace(".gz", ""))],
@@ -776,16 +820,18 @@ class Splat:
             except subprocess.CalledProcessError as e:
                 logger.error(f"Subprocess error during conversion of {tile_name}: {e}")
                 logger.error(f"stderr: {e.stderr}")
-                raise RuntimeError(f"Subprocess error during conversion of {tile_name}: {e}")
+                raise RuntimeError(
+                    f"Subprocess error during conversion of {tile_name}: {e}"
+                )
 
             except Exception as e:
-                logger.error(f"Error during conversion of {tile_name} to {sdf_filename}: {e}")
+                logger.error(
+                    f"Error during conversion of {tile_name} to {sdf_filename}: {e}"
+                )
                 raise RuntimeError(f"Conversion error for {tile_name}: {e}")
 
 
-
 if __name__ == "__main__":
-
     logging.basicConfig(level=logging.DEBUG)
     try:
         splat_service = Splat(

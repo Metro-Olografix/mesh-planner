@@ -10,3 +10,4 @@ data:
   POSTGRES_USER: {{ .Values.postgresql.auth.username | quote }}
   OIDC_ISSUER: {{ .Values.zitadel.domain | quote }}
   LOG_LEVEL: {{ .Values.logLevel | quote }}
+  CORS_ORIGINS: {{ if .Values.corsOrigins }}{{ .Values.corsOrigins | quote }}{{ else }}{{ printf "%s://%s" (ternary "https" "http" .Values.ingress.tls.enabled) .Values.ingress.host | quote }}{{ end }}

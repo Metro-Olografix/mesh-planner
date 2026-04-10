@@ -3,16 +3,16 @@
     <!-- Header -->
     <div class="px-3 pt-3 pb-2 border-bottom">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="fw-semibold">Nodes</span>
-        <button v-if="!readOnly" class="btn btn-primary btn-sm" @click="addNew">+ Add</button>
-        <span v-else class="badge bg-secondary" style="font-size:.7rem">read-only</span>
+        <span class="fw-semibold">{{ $t('tabs.nodes') }}</span>
+        <button v-if="!readOnly" class="btn btn-primary btn-sm" @click="addNew">+ {{ $t('common.add') }}</button>
+        <span v-else class="badge bg-secondary" style="font-size:.7rem">{{ $t('common.read_only') }}</span>
       </div>
       <input
         v-model="search"
         class="form-control form-control-sm mb-1"
-        placeholder="Filter nodes…"
+        :placeholder="$t('node.filter_placeholder')"
       />
-      <div class="d-flex gap-1" role="group" aria-label="Filter by status">
+      <div class="d-flex gap-1" role="group" :aria-label="t('node.aria.filter_status')">
         <button
           v-for="f in statusFilters"
           :key="f.value"
@@ -38,12 +38,12 @@
 
     <!-- List -->
     <div class="flex-fill overflow-auto">
-      <div v-if="loading" class="text-center text-muted py-4">Loading…</div>
-      <div v-else-if="filtered.length === 0 && props.nodes.length === 0" class="text-center text-muted py-4">No nodes yet</div>
+      <div v-if="loading" class="text-center text-muted py-4">{{ $t('common.loading') }}</div>
+      <div v-else-if="filtered.length === 0 && props.nodes.length === 0" class="text-center text-muted py-4">{{ $t('node.no_nodes') }}</div>
       <div v-else-if="filtered.length === 0" class="text-center text-muted py-4">
-        No nodes match the filter.
+        {{ $t('node.no_matches') }}
         <br>
-        <button class="btn btn-link btn-sm p-0 mt-1" style="font-size:.8rem" @click="search = ''; activeFilter = null">Clear filters</button>
+        <button class="btn btn-link btn-sm p-0 mt-1" style="font-size:.8rem" @click="search = ''; activeFilter = null">{{ $t('node.clear_filters') }}</button>
       </div>
       <div
         v-for="node in filtered"
@@ -60,7 +60,7 @@
                 :class="node.status === 'deployed' ? 'bg-success' : node.status === 'planned' ? 'badge--planned' : 'bg-secondary'"
                 style="font-size:.65rem"
               >
-                {{ node.status === 'deployed' ? '✓ deployed' : node.status === 'planned' ? '◆ planned' : '● draft' }}
+                {{ node.status === 'deployed' ? $t('node.status.deployed_badge') : node.status === 'planned' ? $t('node.status.planned_badge') : $t('node.status.draft_badge') }}
               </span>
               <span class="fw-semibold text-truncate" style="font-size:.85rem">{{ node.name }}</span>
             </div>
@@ -88,23 +88,23 @@
             <div v-if="!readOnly" class="menu-wrap">
               <button
                 class="action-btn menu-trigger"
-                aria-label="More actions"
+                :aria-label="t('common.more_actions')"
                 @click="openMenu = openMenu === node.id ? null : node.id"
               >⋮</button>
               <Transition name="menu-fade">
                 <div v-if="openMenu === node.id" v-click-outside="() => openMenu = null" class="action-menu">
-                  <button class="action-menu-item" @click="startEdit(node); openMenu = null">Edit</button>
+                  <button class="action-menu-item" @click="startEdit(node); openMenu = null">{{ $t('common.edit') }}</button>
                   <button
                     v-if="node.coverage_status === 'completed' || node.coverage_status === 'failed'"
                     class="action-menu-item"
                     @click="recompute(node); openMenu = null"
-                  >Recompute coverage</button>
+                  >{{ $t('node.actions.recompute_coverage') }}</button>
                   <div v-if="confirmDeleteId === node.id" class="action-menu-item action-menu-item--danger d-flex align-items-center gap-2">
-                    <span style="font-size:.78rem">Delete?</span>
-                    <button class="btn btn-danger btn-sm" style="font-size:.7rem;padding:1px 8px" @click="confirmDelete(node.id)">Yes</button>
-                    <button class="btn btn-outline-secondary btn-sm" style="font-size:.7rem;padding:1px 8px" @click="confirmDeleteId = null">No</button>
+                    <span style="font-size:.78rem">{{ $t('common.confirm_delete') }}</span>
+                    <button class="btn btn-danger btn-sm" style="font-size:.7rem;padding:1px 8px" @click="confirmDelete(node.id)">{{ $t('common.yes') }}</button>
+                    <button class="btn btn-outline-secondary btn-sm" style="font-size:.7rem;padding:1px 8px" @click="confirmDeleteId = null">{{ $t('common.no') }}</button>
                   </div>
-                  <button v-else class="action-menu-item action-menu-item--danger" @click="promptDelete(node.id)">Delete</button>
+                  <button v-else class="action-menu-item action-menu-item--danger" @click="promptDelete(node.id)">{{ $t('common.delete') }}</button>
                 </div>
               </Transition>
             </div>
@@ -116,10 +116,10 @@
     <!-- Legend (write-mode only — coverage controls are hidden in read-only) -->
     <div v-if="!readOnly" class="px-3 py-2 border-top bg-light" style="font-size:.75rem">
       <div class="d-flex gap-3 text-muted" style="font-size:.7rem">
-        <span>◉ Visible</span>
-        <span>◎ Computed</span>
-        <span>○ Not computed</span>
-        <span>⏳ Computing</span>
+        <span>◉ {{ $t('node.legend.visible') }}</span>
+        <span>◎ {{ $t('node.legend.computed') }}</span>
+        <span>○ {{ $t('node.legend.not_computed') }}</span>
+        <span>⏳ {{ $t('node.legend.computing') }}</span>
       </div>
     </div>
   </div>
@@ -127,11 +127,14 @@
 
 <script setup lang="ts">
 import { ref, computed, type Directive } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { HardwareProfile, MeshNode, NodeCreate, NodeUpdate } from '../types'
 import NodeForm from './NodeForm.vue'
 import { useNodesStore } from '../stores/nodes'
 import { useUIStore } from '../stores/ui'
 import { formatCoord } from '../utils/privacy'
+
+const { t } = useI18n()
 
 // Click-outside directive for closing the dropdown
 const vClickOutside: Directive = {
@@ -174,11 +177,11 @@ const openMenu = ref<string | null>(null)
 const confirmDeleteId = ref<string | null>(null)
 let confirmTimeout: ReturnType<typeof setTimeout> | null = null
 
-const statusFilters = [
-  { value: 'planned',  label: 'Planned',  activeClass: 'btn-warning' },
-  { value: 'deployed', label: 'Deployed', activeClass: 'btn-success' },
-  { value: 'draft',    label: 'Draft',    activeClass: 'btn-secondary' },
-] as const
+const statusFilters = computed(() => [
+  { value: 'planned',  label: t('node.status.planned'),  activeClass: 'btn-warning' },
+  { value: 'deployed', label: t('node.status.deployed'), activeClass: 'btn-success' },
+  { value: 'draft',    label: t('node.status.draft'),    activeClass: 'btn-secondary' },
+] as const)
 
 const filtered = computed(() => {
   const q = search.value.toLowerCase()
@@ -261,11 +264,11 @@ async function onCoverageClick(node: MeshNode, event: MouseEvent) {
       pollUntilReady(node.id)
     } catch (err) {
       console.error('[coverage] triggerCoverage failed for', node.name, err)
-      uiStore.showToast(`Failed to trigger coverage: ${err}`, 'danger')
+      uiStore.showToast(t('node.messages.trigger_failed', { err }), 'danger')
     }
   } else if (node.coverage_status === 'processing') {
     console.log('[coverage] already processing', node.name)
-    uiStore.showToast('Coverage is still computing, please wait…', 'info')
+    uiStore.showToast(t('node.messages.still_computing'), 'info')
   } else {
     console.log('[coverage] toggling on', node.name, 'status=', node.coverage_status)
     emit('toggleCoverage', node.id)
@@ -275,7 +278,7 @@ async function onCoverageClick(node: MeshNode, event: MouseEvent) {
 async function recompute(node: MeshNode) {
   console.log('[coverage] recompute', node.name, 'status=', node.coverage_status)
   if (node.coverage_status === 'processing') {
-    uiStore.showToast('Coverage is still computing, please wait…', 'info')
+    uiStore.showToast(t('node.messages.still_computing'), 'info')
     return
   }
   try {
@@ -284,7 +287,7 @@ async function recompute(node: MeshNode) {
     pollUntilReady(node.id)
   } catch (err) {
     console.error('[coverage] invalidateAndRecompute failed for', node.name, err)
-    uiStore.showToast(`Failed to recompute coverage: ${err}`, 'danger')
+    uiStore.showToast(t('node.messages.recompute_failed', { err }), 'danger')
   }
 }
 
@@ -307,11 +310,11 @@ function pollUntilReady(id: string) {
       } else if (status === 'failed') {
         clearInterval(poll)
         console.error('[coverage] computation failed for', id)
-        uiStore.showToast('Coverage computation failed for this node', 'danger')
+        uiStore.showToast(t('node.messages.comp_failed'), 'danger')
       } else if (attempts >= maxAttempts) {
         clearInterval(poll)
         console.error('[coverage] poll timeout for', id)
-        uiStore.showToast('Coverage computation timed out', 'warning')
+        uiStore.showToast(t('node.messages.comp_timeout'), 'warning')
       }
     } catch (err) {
       console.error('[coverage] poll error for', id, err)
@@ -321,17 +324,17 @@ function pollUntilReady(id: string) {
 }
 
 function coverageLabel(node: MeshNode): string {
-  if (props.visibleCoverage.has(node.id)) return '◉ On'
+  if (props.visibleCoverage.has(node.id)) return '◉ ' + t('common.on')
   if (node.coverage_status === 'processing') return '⏳'
   if (node.coverage_status === 'completed') return '◎'
   return '○'
 }
 
 function coverageAriaLabel(node: MeshNode): string {
-  if (props.visibleCoverage.has(node.id)) return `Hide coverage for ${node.name}`
-  if (node.coverage_status === 'processing') return `Coverage computing for ${node.name}`
-  if (node.coverage_status === 'completed') return `Show coverage for ${node.name}`
-  return `Compute and show coverage for ${node.name}`
+  if (props.visibleCoverage.has(node.id)) return t('node.actions.hide_coverage')
+  if (node.coverage_status === 'processing') return t('node.actions.computing_coverage', { name: node.name })
+  if (node.coverage_status === 'completed') return t('node.actions.show_coverage')
+  return t('node.actions.compute_show_coverage', { name: node.name })
 }
 </script>
 

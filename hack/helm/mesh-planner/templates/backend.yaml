@@ -97,6 +97,11 @@ spec:
                   key: LOG_LEVEL
             - name: PUBLIC_ACCESS
               value: {{ .Values.publicAccess.enabled | quote }}
+            - name: CORS_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "mesh-planner.name" . }}-config
+                  key: CORS_ORIGINS
           volumeMounts:
             - name: splat-tiles
               mountPath: /app/.splat_tiles

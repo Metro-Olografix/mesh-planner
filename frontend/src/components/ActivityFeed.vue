@@ -1,10 +1,10 @@
 <template>
   <div class="p-3 d-flex flex-column h-100">
-    <h6 class="fw-semibold mb-3">Activity Feed</h6>
+    <h6 class="fw-semibold mb-3">{{ $t('activity.title') }}</h6>
     <div v-if="activity.length === 0" class="text-muted small text-center py-4">
       <div style="font-size:1.5rem;margin-bottom:4px">--</div>
-      No recent activity<br/>
-      <span style="font-size:.72rem">Create or update a node to see events here.</span>
+      {{ $t('activity.no_activity') }}<br/>
+      <span style="font-size:.72rem">{{ $t('activity.empty_help') }}</span>
     </div>
     <div class="flex-fill overflow-auto">
       <div
@@ -27,9 +27,12 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { ActivityEvent } from '../types'
 
 defineProps<{ activity: ActivityEvent[] }>()
+
+const { t, locale } = useI18n()
 
 function iconChar(type: ActivityEvent['type']): string {
   return type === 'node_created' ? '+' : type === 'node_updated' ? '✎' : '✕'
@@ -38,11 +41,13 @@ function iconClass(type: ActivityEvent['type']): string {
   return type === 'node_created' ? 'text-success' : type === 'node_updated' ? 'text-primary' : 'text-danger'
 }
 function actionText(type: ActivityEvent['type']): string {
-  return type === 'node_created' ? ' added ' : type === 'node_updated' ? ' updated ' : ' deleted '
+  if (type === 'node_created') return t('activity.actions.added')
+  if (type === 'node_updated') return t('activity.actions.updated')
+  return t('activity.actions.deleted')
 }
 function formatTime(d: Date): string {
-  return d.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' }) +
-    ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString(locale.value, { day: '2-digit', month: '2-digit' }) +
+    ' ' + d.toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' })
 }
 </script>
 

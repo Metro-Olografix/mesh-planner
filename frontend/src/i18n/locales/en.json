@@ -1,0 +1,246 @@
+{
+  "common": {
+    "save": "Save",
+    "save_changes": "Save changes",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "confirm_delete": "Delete?",
+    "yes": "Yes",
+    "no": "No",
+    "edit": "Edit",
+    "add": "Add",
+    "read_only": "read-only",
+    "on": "On",
+    "off": "Off",
+    "optional": "Optional...",
+    "dismiss": "Dismiss",
+    "queuing": "Queuing...",
+    "recompute_all": "Recompute All",
+    "completed": "completed",
+    "failed": "failed",
+    "queued": "queued",
+    "processing": "processing",
+    "more_actions": "More actions"
+  },
+  "nav": {
+    "login": "Login",
+    "logout": "Logout",
+    "privacy_mode": "Privacy",
+    "language": "Language"
+  },
+  "tabs": {
+    "nodes": "Nodes",
+    "path": "Path",
+    "activity": "Activities",
+    "jobs": "Jobs"
+  },
+  "node": {
+    "add_node": "Add node",
+    "edit_node": "Edit node",
+    "filter_placeholder": "Filter nodes...",
+    "no_nodes": "No nodes yet",
+    "no_matches": "No nodes match the filter.",
+    "clear_filters": "Clear filters",
+    "status": {
+      "label": "Status",
+      "planned": "Planned",
+      "deployed": "Deployed",
+      "draft": "Draft",
+      "planned_badge": "◆ planned",
+      "deployed_badge": "✓ deployed",
+      "draft_badge": "● draft",
+      "draft_help": "Draft nodes are visible only to you and excluded from others' path planning."
+    },
+    "form": {
+      "name": "Name",
+      "hardware": "Hardware",
+      "select_hardware": "Select hardware...",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "click_map": "Click map to set",
+      "privacy_warning": "Privacy mode active — coordinates are visible in this form but hidden elsewhere.",
+      "height_agl": "Height AGL (m)",
+      "antenna_gain": "Antenna gain (dBi)",
+      "clutter_env": "Clutter environment",
+      "clutter_help": "Sets the obstacle height used in the RF coverage simulation (SPLAT! -gc flag).",
+      "clutter_auto_help": "\"Auto\" queries ESA WorldCover land-cover data for this location.",
+      "clutter_options": {
+        "auto": "Auto-detect from satellite data (recommended)",
+        "urban": "Urban — dense buildings (~10 m)",
+        "suburban": "Suburban — low-rise mixed (~5 m)",
+        "rural": "Rural — scattered structures (~2 m)",
+        "open": "Open — fields, water, airport (~0 m)"
+      },
+      "lora_preset": "LoRa preset",
+      "lora_help": "Must match the preset configured on the physical device. Affects SNR calculations in path finding.",
+      "sim_radius": "Coverage simulation radius (km)",
+      "sim_radius_help": "Larger radius = longer computation time",
+      "notes": "Notes"
+    },
+    "actions": {
+      "show_coverage": "Show coverage",
+      "hide_coverage": "Hide coverage",
+      "recompute_coverage": "Recompute coverage",
+      "computing_coverage": "Coverage computing for {name}",
+      "compute_show_coverage": "Compute and show coverage for {name}"
+    },
+    "aria": {
+      "filter_status": "Filter by status"
+    },
+    "legend": {
+      "visible": "Visible",
+      "computed": "Computed",
+      "not_computed": "Not computed",
+      "computing": "Computing"
+    },
+    "messages": {
+      "trigger_failed": "Failed to trigger coverage: {err}",
+      "still_computing": "Coverage is still computing, please wait...",
+      "recompute_failed": "Failed to recompute coverage: {err}",
+      "comp_failed": "Coverage computation failed for this node",
+      "comp_timeout": "Coverage computation timed out"
+    }
+  },
+  "path": {
+    "title": "Path Planner",
+    "login_required": "Login to use the path planner.",
+    "intro": "Select two nodes as endpoints. The planner finds the best relay path through the mesh, maximising the worst-hop SNR (bottleneck). SPLAT! terrain data is used where available.",
+    "source": "Source (A)",
+    "destination": "Destination (B)",
+    "select_node": "Select node...",
+    "swap": "Swap source and destination",
+    "include_relays": "Include relay nodes",
+    "find_path": "Find best path",
+    "searching": "Searching...",
+    "clear_result": "Clear result",
+    "stale_warning": "Nodes have changed since this path was computed.",
+    "rerun": "Re-run",
+    "hops": "Hops",
+    "bottleneck_snr": "Bottleneck SNR",
+    "low_snr_warning": "Low bottleneck SNR — consider adding relay nodes.",
+    "snr_quality": "SNR quality",
+    "good": "good",
+    "marginal": "marginal",
+    "poor": "poor",
+    "snr_to_next": "SNR to next",
+    "messages": {
+      "find_failed": "Failed to find path. Please try again."
+    }
+  },
+  "activity": {
+    "title": "Activity Feed",
+    "no_activity": "No recent activity",
+    "empty_help": "Create or update a node to see events here.",
+    "actions": {
+      "added": " added ",
+      "updated": " updated ",
+      "deleted": " deleted "
+    }
+  },
+  "jobs": {
+    "title": "Coverage Jobs",
+    "recompute_all_confirm": "Recompute all?",
+    "no_jobs": "No coverage jobs yet",
+    "empty_help": "Click a node's coverage button to start a computation.",
+    "started": "started",
+    "done": "done",
+    "queued": "queued",
+    "processing": "processing",
+    "recompute_all_success": "Queued coverage recomputation for {count} node(s).",
+    "recompute_all_failed": "Failed to trigger recompute all: {err}"
+  },
+  "map": {
+    "loading_coverage": "Loading coverage...",
+    "new_node_here": "New node here"
+  },
+  "auth": {
+    "guest": "Guest (read-only)",
+    "login_failed": "Login failed: {err}",
+    "completing_login": "Completing login..."
+  },
+  "try": {
+    "page_title": "Test Your Coverage",
+    "page_subtitle": "See how far your LoRa node could reach — no sign-up required.",
+    "back_to_planner": "Back to planner",
+    "step_location": "Location",
+    "step_device": "Device",
+    "step_setup": "Setup",
+    "step_results": "Results",
+    "next": "Next",
+    "back": "Back",
+    "run": "Run simulation",
+    "try_again": "Try another location",
+    "share": "Share this result",
+    "copy_link": "Copy link",
+    "copied": "Copied!",
+    "share_tip": "Anyone opening this link will see the same simulation re-run with your settings.",
+    "join_cta": "Join the network",
+    "join_detail": "Like what you see? Add your node to the Metro Olografix mesh and help expand coverage for everyone.",
+    "location": {
+      "instruction": "Click anywhere on the map to place your node.",
+      "tip": "Higher locations with a clear view of the sky give much better range — rooftops and hilltops are ideal.",
+      "selected": "Selected location",
+      "none_selected": "No location selected yet"
+    },
+    "device": {
+      "instruction": "Choose the hardware you own or plan to buy.",
+      "tip": "More sensitive receivers can pick up weaker signals from farther away. If you're unsure, pick a recommended device.",
+      "recommended_hint": "Not sure? Start with one of our recommended devices:",
+      "recommended_badge": "Recommended",
+      "specs": "{tx} dBm TX · {sensitivity} dBm sensitivity · {freq} MHz",
+      "search_placeholder": "Filter devices..."
+    },
+    "setup": {
+      "height_label": "Antenna height",
+      "height_tip": "Each floor is roughly 3 meters. A rooftop installation dramatically increases range.",
+      "height_presets": {
+        "ground": "Ground level (1 m)",
+        "floor1": "1st floor (~3 m)",
+        "floor2": "2nd floor (~6 m)",
+        "floor3": "3rd floor / low rooftop (~9 m)",
+        "floor5": "5-story rooftop (~15 m)",
+        "tower": "Tower / mast (20 m+)"
+      },
+      "height_hint": "≈ {floors} floor(s) up",
+      "height_hint_ground": "Ground level",
+      "environment_label": "Surroundings",
+      "environment_tip": "Buildings and trees absorb and scatter radio waves. Open hilltops have the least obstruction.",
+      "environment_options": {
+        "auto": "Auto-detect from satellite data",
+        "urban": "City centre — dense buildings",
+        "suburban": "Residential area — mixed low-rise",
+        "rural": "Countryside — scattered structures",
+        "open": "Open field or hilltop"
+      },
+      "range_label": "Range vs. speed",
+      "range_tip": "Longer range means slower data transfer. 'Balanced' is recommended for most uses.",
+      "range_fast": "Fast",
+      "range_fast_detail": "Up to ~1 km, lower latency",
+      "range_balanced": "Balanced",
+      "range_balanced_detail": "Up to ~3 km, recommended",
+      "range_long": "Long range",
+      "range_long_detail": "Up to ~5 km+, slower"
+    },
+    "results": {
+      "computing": "Analysing terrain and computing RF propagation…",
+      "computing_detail": "This typically takes 10–15 seconds.",
+      "computing_step1": "Downloading terrain data…",
+      "computing_step2": "Running RF propagation model…",
+      "computing_step3": "Generating coverage map…",
+      "legend_title": "Signal strength",
+      "legend_strong": "Strong",
+      "legend_weak": "Weak",
+      "legend_detail": "Coloured areas show where your signal could be received. Gaps are caused by terrain obstructions.",
+      "radius_note": "Simulation radius: {radius} km"
+    },
+    "errors": {
+      "rate_limit": "You've reached the limit of {limit} simulations per hour. Please try again later.",
+      "busy": "The server is busy with other simulations. Please try again in a minute.",
+      "failed": "The simulation failed. Please try again.",
+      "no_location": "Please select a location on the map first.",
+      "no_device": "Please choose a device."
+    }
+  }
+}

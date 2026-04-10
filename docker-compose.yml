@@ -41,6 +41,9 @@ services:
     volumes:
       - splat_tiles:/app/.splat_tiles
       - ./custom:/app/custom:ro
+      - ./backend/app:/app/app
+      - ./backend/alembic.ini:/app/alembic.ini
+      - ./backend/alembic:/app/alembic
     ports:
       - "8000:8000"
 

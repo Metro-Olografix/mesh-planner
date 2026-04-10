@@ -14,10 +14,10 @@ router = APIRouter(prefix="/api/hardware", tags=["hardware"])
 
 
 @router.get("/", response_model=list[HardwareProfileOut])
-async def list_hardware(db: AsyncSession = Depends(get_db), user: dict | None = Depends(get_optional_user)):
-    result = await db.execute(
-        select(HardwareProfile).order_by(HardwareProfile.name)
-    )
+async def list_hardware(
+    db: AsyncSession = Depends(get_db), user: dict | None = Depends(get_optional_user)
+):
+    result = await db.execute(select(HardwareProfile).order_by(HardwareProfile.name))
     profiles = result.scalars().all()
     logger.debug("Listed %d hardware profiles", len(profiles))
     return profiles

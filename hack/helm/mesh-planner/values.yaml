@@ -71,4 +71,9 @@ ingress:
       enabled: true
       clusterIssuer: letsencrypt-prod
 
+# CORS allowed origins for the backend.
+# Defaults to the ingress host (with the correct scheme based on ingress.tls.enabled).
+# Override with a comma-separated list when serving from additional origins.
+corsOrigins: ""
+
 logLevel: INFO

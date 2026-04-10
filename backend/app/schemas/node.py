@@ -31,6 +31,7 @@ class NodeCreate(BaseModel):
     sim_radius_km: float = Field(ge=1, le=100, default=10.0)
     environment: str = "auto"
     lora_preset: str = "MEDIUM_FAST"
+    high_resolution: bool = True
     notes: Optional[str] = None
 
 
@@ -45,6 +46,7 @@ class NodeUpdate(BaseModel):
     sim_radius_km: Optional[float] = Field(None, ge=1, le=100)
     environment: Optional[str] = None
     lora_preset: Optional[str] = None
+    high_resolution: Optional[bool] = None
     notes: Optional[str] = None
 
 
@@ -60,6 +62,7 @@ class NodeOut(BaseModel):
     sim_radius_km: float
     environment: str
     lora_preset: str
+    high_resolution: bool
     notes: Optional[str]
     created_by: str
     created_at: datetime
@@ -73,6 +76,7 @@ class NodeOut(BaseModel):
 class NodePublicOut(BaseModel):
     """Stripped-down node response for unauthenticated (public) requests.
     Coordinates are fuzzed server-side; sensitive fields are omitted."""
+
     id: UUID
     name: str
     lat: float
@@ -83,6 +87,7 @@ class NodePublicOut(BaseModel):
     sim_radius_km: float
     environment: str
     lora_preset: str
+    high_resolution: bool
     hardware: HardwareProfileOut
     coverage_status: Optional[str] = None
 

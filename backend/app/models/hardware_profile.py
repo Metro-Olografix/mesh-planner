@@ -7,7 +7,7 @@ from app.database import Base
 class HardwareProfile(Base):
     __tablename__ = "hardware_profiles"
 
-    id = Column(String, primary_key=True)          # slug, e.g. "t-beam-v1"
+    id = Column(String, primary_key=True)  # slug, e.g. "t-beam-v1"
     name = Column(String, nullable=False)
     manufacturer = Column(String, nullable=False)
     tx_power_dbm = Column(Float, nullable=False)

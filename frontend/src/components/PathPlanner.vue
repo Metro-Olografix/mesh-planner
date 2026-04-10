@@ -1,23 +1,21 @@
 <template>
   <div class="p-3 d-flex flex-column h-100">
-    <h6 class="fw-semibold mb-2">Path Planner</h6>
+    <h6 class="fw-semibold mb-2">{{ $t('path.title') }}</h6>
 
     <div v-if="readOnly" class="alert alert-secondary py-2 small">
-      Login to use the path planner.
+      {{ $t('path.login_required') }}
     </div>
 
     <template v-if="!readOnly">
     <p v-if="!result" class="text-muted small mb-2">
-      Select two nodes as endpoints. The planner finds the best relay path
-      through the mesh, maximising the worst-hop SNR (bottleneck).
-      SPLAT! terrain data is used where available.
+      {{ $t('path.intro') }}
     </p>
 
     <!-- Node selectors -->
     <div class="mb-2">
-      <label class="form-label small mb-1 fw-semibold text-success">Source (A)</label>
+      <label class="form-label small mb-1 fw-semibold text-success">{{ $t('path.source') }}</label>
       <select v-model="sourceId" class="form-select form-select-sm">
-        <option value="">Select node…</option>
+        <option value="">{{ $t('path.select_node') }}</option>
         <option
           v-for="n in selectableNodes"
           :key="n.id"
@@ -26,7 +24,7 @@
         >
           {{ n.name }}
           <template v-if="n.status === 'deployed'"> ✓</template>
-          <template v-else> (planned)</template>
+          <template v-else> ({{ $t('node.status.planned') }})</template>
         </option>
       </select>
     </div>
@@ -34,16 +32,16 @@
     <div class="d-flex justify-content-center my-1">
       <button
         class="btn btn-outline-secondary swap-btn"
-        title="Swap source and destination"
-        aria-label="Swap source and destination"
+        :title="$t('path.swap')"
+        :aria-label="$t('path.swap')"
         @click="swap"
       >⇅</button>
     </div>
 
     <div class="mb-2">
-      <label class="form-label small mb-1 fw-semibold text-danger">Destination (B)</label>
+      <label class="form-label small mb-1 fw-semibold text-danger">{{ $t('path.destination') }}</label>
       <select v-model="destId" class="form-select form-select-sm">
-        <option value="">Select node…</option>
+        <option value="">{{ $t('path.select_node') }}</option>
         <option
           v-for="n in selectableNodes"
           :key="n.id"
@@ -52,14 +50,14 @@
         >
           {{ n.name }}
           <template v-if="n.status === 'deployed'"> ✓</template>
-          <template v-else> (planned)</template>
+          <template v-else> ({{ $t('node.status.planned') }})</template>
         </option>
       </select>
     </div>
 
     <!-- Status filters -->
     <div class="mb-2">
-      <label class="form-label small mb-1 fw-semibold">Include relay nodes</label>
+      <label class="form-label small mb-1 fw-semibold">{{ $t('path.include_relays') }}</label>
       <div class="d-flex gap-3">
         <div class="form-check form-check-inline" v-for="s in allStatuses" :key="s">
           <input
@@ -69,7 +67,7 @@
             :value="s"
             v-model="includedStatuses"
           />
-          <label class="form-check-label small" :for="'status-' + s">{{ s }}</label>
+          <label class="form-check-label small" :for="'status-' + s">{{ $t(`node.status.${s}`) }}</label>
         </div>
       </div>
     </div>
@@ -80,7 +78,7 @@
       @click="findPath"
     >
       <span v-if="loading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-      {{ loading ? 'Searching…' : 'Find best path' }}
+      {{ loading ? $t('path.searching') : $t('path.find_path') }}
     </button>
 
     <button
@@ -88,14 +86,14 @@
       class="btn btn-outline-secondary btn-sm mb-2"
       @click="clearResult"
     >
-      Clear result
+      {{ $t('path.clear_result') }}
     </button>
 
     <!-- Result -->
     <div v-if="result" class="flex-fill overflow-auto">
       <div v-if="pathStale && result.found" class="alert alert-warning py-2 small d-flex align-items-center gap-2">
-        <span>Nodes have changed since this path was computed.</span>
-        <button class="btn btn-warning btn-sm" style="font-size:.75rem;white-space:nowrap" @click="findPath">Re-run</button>
+        <span>{{ $t('path.stale_warning') }}</span>
+        <button class="btn btn-warning btn-sm" style="font-size:.75rem;white-space:nowrap" @click="findPath">{{ $t('path.rerun') }}</button>
       </div>
       <div v-if="result.found" class="alert alert-success py-2 small">
         {{ result.message }}
@@ -105,7 +103,7 @@
       </div>
 
       <div v-if="result.found">
-        <div class="fw-semibold small mb-2">Hops ({{ result.hops.length }})</div>
+        <div class="fw-semibold small mb-2">{{ $t('path.hops') }} ({{ result.hops.length }})</div>
         <div
           v-for="(hop, i) in result.hops"
           :key="i"
@@ -130,23 +128,23 @@
 
         <hr class="my-2" />
         <div class="small text-muted">
-          Bottleneck SNR: <strong :class="snrClass(result.bottleneck_snr_db ?? -999)">
+          {{ $t('path.bottleneck_snr') }}: <strong :class="snrClass(result.bottleneck_snr_db ?? -999)">
             {{ result.bottleneck_snr_db }} dB
           </strong>
         </div>
         <div v-if="result.bottleneck_snr_db !== null && result.bottleneck_snr_db < 10" class="small text-warning mt-1">
-          Low bottleneck SNR — consider adding relay nodes.
+          {{ $t('path.low_snr_warning') }}
         </div>
       </div>
     </div>
 
     <!-- SNR legend (hidden when result is shown to save space on small screens) -->
     <div v-if="!result" class="mt-auto pt-2 border-top small text-muted" style="font-size:.72rem">
-      <div class="fw-semibold mb-1">SNR quality</div>
+      <div class="fw-semibold mb-1">{{ $t('path.snr_quality') }}</div>
       <div class="d-flex gap-3">
-        <span class="text-success">&#9679; &ge;10 dB good</span>
-        <span style="color:#e67e00">&#9679; 0–10 dB marginal</span>
-        <span class="text-danger">&#9679; &lt;0 dB poor</span>
+        <span class="text-success">&#9679; &ge;10 dB {{ $t('path.good') }}</span>
+        <span style="color:#e67e00">&#9679; 0–10 dB {{ $t('path.marginal') }}</span>
+        <span class="text-danger">&#9679; &lt;0 dB {{ $t('path.poor') }}</span>
       </div>
     </div>
     </template>
@@ -155,6 +153,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { NodeStatus, PathResult } from '../types'
 import { useNodesStore } from '../stores/nodes'
 import { useAuthStore } from '../stores/auth'
@@ -171,6 +170,7 @@ const emit = defineEmits<{
   pickModeChanged: [active: boolean]
 }>()
 
+const { t } = useI18n()
 const nodesStore = useNodesStore()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
@@ -228,7 +228,7 @@ async function findPath() {
     emit('pathFound', result.value)
   } catch (e) {
     console.error(e)
-    uiStore.showToast('Failed to find path. Please try again.', 'danger')
+    uiStore.showToast(t('path.messages.find_failed'), 'danger')
   } finally {
     loading.value = false
   }

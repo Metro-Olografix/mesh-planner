@@ -15,7 +15,9 @@ class HopInfo(BaseModel):
     name: str
     lat: float
     lon: float
-    snr_db: Optional[float] = None   # estimated SNR on the link FROM this node to the next
+    snr_db: Optional[float] = (
+        None  # estimated SNR on the link FROM this node to the next
+    )
 
 
 class PathResult(BaseModel):

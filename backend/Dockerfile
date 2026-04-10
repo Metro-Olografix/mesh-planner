@@ -36,5 +36,7 @@ COPY --from=splat-builder /usr/local/bin/srtm2sdf /app/srtm2sdf
 RUN ln -s /app/srtm2sdf /app/srtm2sdf-hd
 
 COPY backend/app/ app/
+COPY backend/alembic.ini .
+COPY backend/alembic/ alembic/
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

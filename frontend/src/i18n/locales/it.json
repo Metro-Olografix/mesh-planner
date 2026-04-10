@@ -1,0 +1,246 @@
+{
+  "common": {
+    "save": "Salva",
+    "save_changes": "Salva modifiche",
+    "cancel": "Annulla",
+    "loading": "Caricamento...",
+    "saving": "Salvataggio...",
+    "delete": "Elimina",
+    "confirm_delete": "Eliminare?",
+    "yes": "Sì",
+    "no": "No",
+    "edit": "Modifica",
+    "add": "Aggiungi",
+    "read_only": "sola lettura",
+    "on": "On",
+    "off": "Off",
+    "optional": "Opzionale...",
+    "dismiss": "Chiudi",
+    "queuing": "In coda...",
+    "recompute_all": "Ricalcola tutto",
+    "completed": "completato",
+    "failed": "fallito",
+    "queued": "in coda",
+    "processing": "in corso",
+    "more_actions": "Altre azioni"
+  },
+  "nav": {
+    "login": "Accedi",
+    "logout": "Esci",
+    "privacy_mode": "Privacy",
+    "language": "Lingua"
+  },
+  "tabs": {
+    "nodes": "Nodi",
+    "path": "Pianificatore",
+    "activity": "Attività",
+    "jobs": "Processi"
+  },
+  "node": {
+    "add_node": "Aggiungi nodo",
+    "edit_node": "Modifica nodo",
+    "filter_placeholder": "Filtra nodi...",
+    "no_nodes": "Nessun nodo ancora",
+    "no_matches": "Nessun nodo corrisponde al filtro.",
+    "clear_filters": "Cancella filtri",
+    "status": {
+      "label": "Stato",
+      "planned": "Pianificato",
+      "deployed": "Installato",
+      "draft": "Bozza",
+      "planned_badge": "◆ pianificato",
+      "deployed_badge": "✓ installato",
+      "draft_badge": "● bozza",
+      "draft_help": "I nodi in bozza sono visibili solo a te e sono esclusi dalla pianificazione altrui."
+    },
+    "form": {
+      "name": "Nome",
+      "hardware": "Hardware",
+      "select_hardware": "Seleziona hardware...",
+      "latitude": "Latitudine",
+      "longitude": "Longitudine",
+      "click_map": "Clicca sulla mappa per impostare",
+      "privacy_warning": "Modalità privacy attiva — le coordinate sono visibili in questo modulo ma nascoste altrove.",
+      "height_agl": "Altezza AGL (m)",
+      "antenna_gain": "Guadagno antenna (dBi)",
+      "clutter_env": "Ambiente (clutter)",
+      "clutter_help": "Imposta l'altezza degli ostacoli usata nella simulazione della copertura RF (opzione SPLAT! -gc).",
+      "clutter_auto_help": "\"Auto\" interroga i dati sull'uso del suolo ESA WorldCover per questa posizione.",
+      "clutter_options": {
+        "auto": "Rilevamento automatico dai dati satellitari (consigliato)",
+        "urban": "Urbano — edifici densi (~10 m)",
+        "suburban": "Suburbano — case basse miste (~5 m)",
+        "rural": "Rurale — strutture sparse (~2 m)",
+        "open": "Aperto — campi, acqua, aeroporti (~0 m)"
+      },
+      "lora_preset": "Preset LoRa",
+      "lora_help": "Deve corrispondere al preset configurato sul dispositivo fisico. Influisce sui calcoli SNR nella ricerca del percorso.",
+      "sim_radius": "Raggio simulazione copertura (km)",
+      "sim_radius_help": "Raggio maggiore = tempo di calcolo più lungo",
+      "notes": "Note"
+    },
+    "aria": {
+      "filter_status": "Filtra per stato"
+    },
+    "actions": {
+      "show_coverage": "Mostra copertura",
+      "hide_coverage": "Nascondi copertura",
+      "recompute_coverage": "Ricalcola copertura",
+      "computing_coverage": "Calcolo copertura per {name}",
+      "compute_show_coverage": "Calcola e mostra copertura per {name}"
+    },
+    "legend": {
+      "visible": "Visibile",
+      "computed": "Calcolato",
+      "not_computed": "Non calcolato",
+      "computing": "In calcolo"
+    },
+    "messages": {
+      "trigger_failed": "Attivazione copertura fallita: {err}",
+      "still_computing": "Il calcolo della copertura è in corso, attendere...",
+      "recompute_failed": "Ricalcolo copertura fallito: {err}",
+      "comp_failed": "Il calcolo della copertura è fallito per questo nodo",
+      "comp_timeout": "Il calcolo della copertura è andato in timeout"
+    }
+  },
+  "path": {
+    "title": "Pianificatore Percorsi",
+    "login_required": "Accedi per usare il pianificatore percorsi.",
+    "intro": "Seleziona due nodi come estremi. Il pianificatore troverà il miglior percorso relay attraverso la rete, massimizzando l'SNR dell'hop peggiore (collo di bottiglia). Vengono usati i dati del terreno SPLAT! dove disponibili.",
+    "source": "Sorgente (A)",
+    "destination": "Destinazione (B)",
+    "select_node": "Seleziona nodo...",
+    "swap": "Inverti sorgente e destinazione",
+    "include_relays": "Includi nodi relay",
+    "find_path": "Trova il miglior percorso",
+    "searching": "Ricerca in corso...",
+    "clear_result": "Cancella risultato",
+    "stale_warning": "I nodi sono cambiati da quando questo percorso è stato calcolato.",
+    "rerun": "Riesegui",
+    "hops": "Salti (Hops)",
+    "bottleneck_snr": "SNR collo di bottiglia",
+    "low_snr_warning": "Basso SNR nel collo di bottiglia — considera l'aggiunta di nodi relay.",
+    "snr_quality": "Qualità SNR",
+    "good": "buono",
+    "marginal": "marginale",
+    "poor": "scarso",
+    "snr_to_next": "SNR verso il successivo",
+    "messages": {
+      "find_failed": "Ricerca del percorso fallita. Riprova."
+    }
+  },
+  "activity": {
+    "title": "Feed Attività",
+    "no_activity": "Nessuna attività recente",
+    "empty_help": "Crea o aggiorna un nodo per vedere gli eventi qui.",
+    "actions": {
+      "added": " ha aggiunto ",
+      "updated": " ha aggiornato ",
+      "deleted": " ha eliminato "
+    }
+  },
+  "jobs": {
+    "title": "Processi di generazione copertura",
+    "recompute_all_confirm": "Ricalcolare tutto?",
+    "no_jobs": "Nessun processo di generazione copertura ancora",
+    "empty_help": "Clicca sul pulsante copertura di un nodo per avviare un calcolo.",
+    "started": "iniziato il",
+    "done": "fatto il",
+    "queued": "In coda",
+    "processing": "In corso",
+    "recompute_all_success": "Messo in coda il ricalcolo per {count} nodo/i.",
+    "recompute_all_failed": "Impossibile avviare il ricalcolo globale: {err}"
+  },
+  "map": {
+    "loading_coverage": "Caricamento copertura...",
+    "new_node_here": "Nuovo nodo qui"
+  },
+  "auth": {
+    "guest": "Ospite (sola lettura)",
+    "login_failed": "Accesso fallito: {err}",
+    "completing_login": "Completamento accesso..."
+  },
+  "try": {
+    "page_title": "Testa la tua copertura",
+    "page_subtitle": "Scopri fin dove arriva il tuo nodo LoRa — senza registrazione.",
+    "back_to_planner": "Torna al planner",
+    "step_location": "Posizione",
+    "step_device": "Dispositivo",
+    "step_setup": "Configurazione",
+    "step_results": "Risultati",
+    "next": "Avanti",
+    "back": "Indietro",
+    "run": "Avvia simulazione",
+    "try_again": "Prova un'altra posizione",
+    "share": "Condividi questo risultato",
+    "copy_link": "Copia link",
+    "copied": "Copiato!",
+    "share_tip": "Chi apre questo link vedrà la stessa simulazione rieseguita con le tue impostazioni.",
+    "join_cta": "Unisciti alla rete",
+    "join_detail": "Ti piace quello che vedi? Aggiungi il tuo nodo alla rete mesh Metro Olografix e aiuta a espandere la copertura per tutti.",
+    "location": {
+      "instruction": "Clicca sulla mappa per posizionare il tuo nodo.",
+      "tip": "Le posizioni elevate con visuale libera sul cielo danno un raggio molto maggiore — i tetti e le colline sono ideali.",
+      "selected": "Posizione selezionata",
+      "none_selected": "Nessuna posizione selezionata"
+    },
+    "device": {
+      "instruction": "Scegli l'hardware che possiedi o che intendi acquistare.",
+      "tip": "I ricevitori più sensibili captano segnali più deboli da distanze maggiori. Se non sei sicuro, scegli un dispositivo consigliato.",
+      "recommended_hint": "Non sai quale scegliere? Parti da uno dei dispositivi consigliati:",
+      "recommended_badge": "Consigliato",
+      "specs": "{tx} dBm TX · {sensitivity} dBm sensibilità · {freq} MHz",
+      "search_placeholder": "Filtra dispositivi..."
+    },
+    "setup": {
+      "height_label": "Altezza antenna",
+      "height_tip": "Ogni piano è circa 3 metri. Un'installazione sul tetto aumenta enormemente il raggio.",
+      "height_presets": {
+        "ground": "Piano terra (1 m)",
+        "floor1": "1° piano (~3 m)",
+        "floor2": "2° piano (~6 m)",
+        "floor3": "3° piano / tetto basso (~9 m)",
+        "floor5": "Tetto 5 piani (~15 m)",
+        "tower": "Torre / palo (20 m+)"
+      },
+      "height_hint": "≈ {floors} piano/i",
+      "height_hint_ground": "Piano terra",
+      "environment_label": "Ambiente circostante",
+      "environment_tip": "Edifici e alberi assorbono e disperdono le onde radio. I rilievi aperti hanno meno ostacoli.",
+      "environment_options": {
+        "auto": "Rilevamento automatico da dati satellitari",
+        "urban": "Centro città — edifici densi",
+        "suburban": "Area residenziale — case basse miste",
+        "rural": "Campagna — strutture sparse",
+        "open": "Campo aperto o collina"
+      },
+      "range_label": "Portata vs. velocità",
+      "range_tip": "Maggiore portata significa trasferimento dati più lento. 'Bilanciato' è consigliato per la maggior parte degli usi.",
+      "range_fast": "Veloce",
+      "range_fast_detail": "Fino a ~1 km, bassa latenza",
+      "range_balanced": "Bilanciato",
+      "range_balanced_detail": "Fino a ~3 km, consigliato",
+      "range_long": "Lunga portata",
+      "range_long_detail": "Fino a ~5 km+, più lento"
+    },
+    "results": {
+      "computing": "Analisi del terreno e calcolo della propagazione RF…",
+      "computing_detail": "Di solito richiede 10–15 secondi.",
+      "computing_step1": "Download dei dati di terreno…",
+      "computing_step2": "Esecuzione del modello di propagazione RF…",
+      "computing_step3": "Generazione della mappa di copertura…",
+      "legend_title": "Forza del segnale",
+      "legend_strong": "Forte",
+      "legend_weak": "Debole",
+      "legend_detail": "Le aree colorate mostrano dove potrebbe arrivare il tuo segnale. I vuoti sono causati da ostacoli del terreno.",
+      "radius_note": "Raggio simulazione: {radius} km"
+    },
+    "errors": {
+      "rate_limit": "Hai raggiunto il limite di {limit} simulazioni all'ora. Riprova più tardi.",
+      "busy": "Il server è occupato con altre simulazioni. Riprova tra un minuto.",
+      "failed": "La simulazione è fallita. Riprova.",
+      "no_location": "Seleziona prima una posizione sulla mappa.",
+      "no_device": "Scegli un dispositivo."
+    }
+  }
+}

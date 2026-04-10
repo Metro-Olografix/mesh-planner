@@ -4,6 +4,7 @@ Frequency is the Meshtastic EU_868 MEDIUM_FAST primary channel frequency.
 TX power and RX sensitivity reflect hardware datasheets; sensitivity values
 are for the default EU_868 MEDIUM_FAST preset (SF9, BW250 kHz) unless noted.
 """
+
 from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,7 +21,7 @@ HARDWARE_PROFILES = [
         "manufacturer": "LilyGo",
         "tx_power_dbm": 20.0,
         "frequency_mhz": EU_868_FREQ,
-        "rx_sensitivity_dbm": -137.0,   # SX1276, best-in-class sensitivity
+        "rx_sensitivity_dbm": -137.0,  # SX1276, best-in-class sensitivity
         "default_antenna_gain_dbi": 2.0,
         "description": "ESP32 + SX1276, GPS, classic Meshtastic workhorse",
     },
@@ -30,7 +31,7 @@ HARDWARE_PROFILES = [
         "manufacturer": "LilyGo",
         "tx_power_dbm": 22.0,
         "frequency_mhz": EU_868_FREQ,
-        "rx_sensitivity_dbm": -130.0,   # SX1262
+        "rx_sensitivity_dbm": -130.0,  # SX1262
         "default_antenna_gain_dbi": 2.0,
         "description": "ESP32-S3 + SX1262, GPS, BME280, IMU, RTC, microSD",
     },
@@ -40,7 +41,7 @@ HARDWARE_PROFILES = [
         "manufacturer": "LilyGo",
         "tx_power_dbm": 22.0,
         "frequency_mhz": EU_868_FREQ,
-        "rx_sensitivity_dbm": -130.0,   # SX1262
+        "rx_sensitivity_dbm": -130.0,  # SX1262
         "default_antenna_gain_dbi": 2.0,
         "description": "ESP32-S3 + SX1262, solar charging, low-cost relay node",
     },
@@ -48,9 +49,9 @@ HARDWARE_PROFILES = [
         "id": "t-echo",
         "name": "T-Echo",
         "manufacturer": "LilyGo",
-        "tx_power_dbm": 13.4,           # nRF52840 limited TX
+        "tx_power_dbm": 13.4,  # nRF52840 limited TX
         "frequency_mhz": EU_868_FREQ,
-        "rx_sensitivity_dbm": -130.0,   # SX1262
+        "rx_sensitivity_dbm": -130.0,  # SX1262
         "default_antenna_gain_dbi": 2.0,
         "description": "nRF52840 + SX1262, E-Ink display, GPS, NFC, multi-day battery",
     },
@@ -62,7 +63,7 @@ HARDWARE_PROFILES = [
         "frequency_mhz": EU_868_FREQ,
         "rx_sensitivity_dbm": -130.0,
         "default_antenna_gain_dbi": 2.0,
-        "description": "ESP32-S3 + SX1262, QWERTY keyboard, 2.8\" touch LCD",
+        "description": 'ESP32-S3 + SX1262, QWERTY keyboard, 2.8" touch LCD',
     },
     {
         "id": "t-deck-plus",
@@ -90,11 +91,10 @@ HARDWARE_PROFILES = [
         "manufacturer": "LilyGo",
         "tx_power_dbm": 22.0,
         "frequency_mhz": EU_868_FREQ,
-        "rx_sensitivity_dbm": -130.0,   # LR1121 tri-band, similar to SX1262
+        "rx_sensitivity_dbm": -130.0,  # LR1121 tri-band, similar to SX1262
         "default_antenna_gain_dbi": 2.0,
         "description": "ESP32-S3 + LR1121 tri-band, GPS, Qi wireless charging, pager form factor",
     },
-
     # ── Heltec ────────────────────────────────────────────────────────────────
     {
         "id": "ht-ct62",
@@ -112,7 +112,7 @@ HARDWARE_PROFILES = [
         "manufacturer": "Heltec",
         "tx_power_dbm": 21.0,
         "frequency_mhz": EU_868_FREQ,
-        "rx_sensitivity_dbm": -120.0,   # slightly lower sensitivity than SX1262 spec due to layout
+        "rx_sensitivity_dbm": -120.0,  # slightly lower sensitivity than SX1262 spec due to layout
         "default_antenna_gain_dbi": 2.0,
         "description": "ESP32-S3 + SX1262, OLED, most popular beginner board",
     },
@@ -120,7 +120,7 @@ HARDWARE_PROFILES = [
         "id": "heltec-v4",
         "name": "Heltec LoRa 32 v4",
         "manufacturer": "Heltec",
-        "tx_power_dbm": 28.0,           # doubled TX vs v3
+        "tx_power_dbm": 28.0,  # doubled TX vs v3
         "frequency_mhz": EU_868_FREQ,
         "rx_sensitivity_dbm": -120.0,
         "default_antenna_gain_dbi": 2.0,
@@ -140,7 +140,7 @@ HARDWARE_PROFILES = [
         "id": "heltec-tracker-v2",
         "name": "Heltec Wireless Tracker v2.1",
         "manufacturer": "Heltec",
-        "tx_power_dbm": 28.0,           # boosted TX
+        "tx_power_dbm": 28.0,  # boosted TX
         "frequency_mhz": EU_868_FREQ,
         "rx_sensitivity_dbm": -120.0,
         "default_antenna_gain_dbi": 2.0,
@@ -164,7 +164,7 @@ HARDWARE_PROFILES = [
         "frequency_mhz": EU_868_FREQ,
         "rx_sensitivity_dbm": -130.0,
         "default_antenna_gain_dbi": 2.0,
-        "description": "ESP32-S3 + SX1262, 2.13\" E-Ink display (180-day image retention)",
+        "description": 'ESP32-S3 + SX1262, 2.13" E-Ink display (180-day image retention)',
     },
     {
         "id": "heltec-meshpocket",
@@ -186,7 +186,6 @@ HARDWARE_PROFILES = [
         "default_antenna_gain_dbi": 3.0,
         "description": "nRF52840 + SX1262, IP65 solar repeater, 3× 2800 mAh, plug-and-play",
     },
-
     # ── RAKwireless ───────────────────────────────────────────────────────────
     {
         "id": "rak4631",
@@ -194,7 +193,7 @@ HARDWARE_PROFILES = [
         "manufacturer": "RAKwireless",
         "tx_power_dbm": 20.0,
         "frequency_mhz": EU_868_FREQ,
-        "rx_sensitivity_dbm": -137.0,   # highest sensitivity in class
+        "rx_sensitivity_dbm": -137.0,  # highest sensitivity in class
         "default_antenna_gain_dbi": 2.0,
         "description": "nRF52840 + SX1262, modular WisBlock system, best RX sensitivity",
     },
@@ -206,7 +205,7 @@ HARDWARE_PROFILES = [
         "frequency_mhz": EU_868_FREQ,
         "rx_sensitivity_dbm": -137.0,
         "default_antenna_gain_dbi": 2.0,
-        "description": "nRF52840 + SX1262, GPS, 1.3\" OLED, 3200 mAh, SMA connector",
+        "description": 'nRF52840 + SX1262, GPS, 1.3" OLED, 3200 mAh, SMA connector',
     },
     {
         "id": "wismesh-repeater",
@@ -222,13 +221,12 @@ HARDWARE_PROFILES = [
         "id": "wismesh-1w",
         "name": "WisMesh 1W Booster",
         "manufacturer": "RAKwireless",
-        "tx_power_dbm": 30.0,           # 1 W, ham license required outside USA
+        "tx_power_dbm": 30.0,  # 1 W, ham license required outside USA
         "frequency_mhz": EU_868_FREQ,
         "rx_sensitivity_dbm": -137.0,
         "default_antenna_gain_dbi": 3.0,
         "description": "nRF52840 + SX1262 + PA, 30 dBm TX — requires ham license outside USA",
     },
-
     # ── Seeed Studio ──────────────────────────────────────────────────────────
     {
         "id": "sensecap-t1000e",
@@ -236,7 +234,7 @@ HARDWARE_PROFILES = [
         "manufacturer": "Seeed Studio",
         "tx_power_dbm": 20.0,
         "frequency_mhz": EU_868_FREQ,
-        "rx_sensitivity_dbm": -130.0,   # LR1110 (note: no SX1276 legacy rx)
+        "rx_sensitivity_dbm": -130.0,  # LR1110 (note: no SX1276 legacy rx)
         "default_antenna_gain_dbi": 2.0,
         "description": "nRF52840 + LR1110, 6.5 mm credit-card form, IP65 — best-selling tracker",
     },
@@ -248,7 +246,7 @@ HARDWARE_PROFILES = [
         "frequency_mhz": EU_868_FREQ,
         "rx_sensitivity_dbm": -130.0,
         "default_antenna_gain_dbi": 2.0,
-        "description": "nRF52840 + SX1262, GPS, 1.3\" OLED, 2000 mAh, joystick — best value handheld",
+        "description": 'nRF52840 + SX1262, GPS, 1.3" OLED, 2000 mAh, joystick — best value handheld',
     },
     {
         "id": "sensecap-solar-p1-pro",
@@ -260,7 +258,6 @@ HARDWARE_PROFILES = [
         "default_antenna_gain_dbi": 3.0,
         "description": "nRF52840 + SX1262, GPS, 13400 mAh (4× 18650), 5W solar panel included",
     },
-
     # ── Elecrow ThinkNode ─────────────────────────────────────────────────────
     {
         "id": "thinknode-m1",
@@ -270,7 +267,7 @@ HARDWARE_PROFILES = [
         "frequency_mhz": EU_868_FREQ,
         "rx_sensitivity_dbm": -130.0,
         "default_antenna_gain_dbi": 2.0,
-        "description": "nRF52840 + SX1262, GPS, 1.54\" E-Paper, 1200 mAh, rotary encoder",
+        "description": 'nRF52840 + SX1262, GPS, 1.54" E-Paper, 1200 mAh, rotary encoder',
     },
     {
         "id": "thinknode-m2",
@@ -280,21 +277,19 @@ HARDWARE_PROFILES = [
         "frequency_mhz": EU_868_FREQ,
         "rx_sensitivity_dbm": -130.0,
         "default_antenna_gain_dbi": 2.0,
-        "description": "ESP32-S3 + SX1262, 1.3\" OLED, 1000 mAh — budget handheld",
+        "description": 'ESP32-S3 + SX1262, 1.3" OLED, 1000 mAh — budget handheld',
     },
-
     # ── High-power fixed stations ─────────────────────────────────────────────
     {
         "id": "station-g1",
         "name": "Station G1",
         "manufacturer": "Meshtastic",
-        "tx_power_dbm": 30.0,           # 1 W
+        "tx_power_dbm": 30.0,  # 1 W
         "frequency_mhz": EU_868_FREQ,
         "rx_sensitivity_dbm": -130.0,
         "default_antenna_gain_dbi": 3.0,
         "description": "1 W high-power fixed station, ideal for backbone nodes",
     },
-
     # ── Generic / custom ──────────────────────────────────────────────────────
     {
         "id": "nano-g1",
