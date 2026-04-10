@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     cors_origins: str = ""  # comma-separated allowed origins (default: localhost:5173)
     log_level: str = "INFO"  # DEBUG | INFO | WARNING | ERROR
     try_rate_limit_per_hour: int = (
-        6  # max simulations per IP per hour on /api/try/simulate
+        3  # max simulations per IP per hour on /api/try/simulate
     )
     try_max_radius_km: float = (
         3.0  # max coverage radius for unauthenticated simulations
