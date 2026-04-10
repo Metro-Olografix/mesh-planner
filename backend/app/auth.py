@@ -3,6 +3,7 @@ OIDC JWT validation via OIDC discovery + JWKS.
 Tokens are standard RS256-signed JWTs. Works with any OIDC-compliant provider
 (Zitadel, Keycloak, Auth0, Okta, etc.).
 """
+
 import asyncio
 import logging
 from typing import Any
@@ -98,9 +99,7 @@ async def get_display_name(token: str, payload: dict) -> str:
 
     # 1. Try claims already present in the JWT
     name = (
-        payload.get("preferred_username")
-        or payload.get("name")
-        or payload.get("email")
+        payload.get("preferred_username") or payload.get("name") or payload.get("email")
     )
     if name:
         return name

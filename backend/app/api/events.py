@@ -2,8 +2,6 @@ import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-
-logger = logging.getLogger(__name__)
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +11,8 @@ from app.config import settings
 from app.database import get_db
 from app.models.node_event import NodeEvent
 from app.services.sse import sse_manager
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["events"])
 
@@ -47,9 +47,7 @@ async def sse_stream(request: Request, token: str | None = Query(None)):
                     )
                     break
                 try:
-                    payload = await asyncio.wait_for(
-                        queue.get(), timeout=25.0
-                    )
+                    payload = await asyncio.wait_for(queue.get(), timeout=25.0)
                     yield f"data: {payload}\n\n"
                 except asyncio.TimeoutError:
                     yield ": keepalive\n\n"
@@ -74,9 +72,7 @@ async def recent_events(
 ):
     """Return the most recent node activity events, newest first."""
     result = await db.execute(
-        select(NodeEvent)
-        .order_by(NodeEvent.timestamp.desc())
-        .limit(limit)
+        select(NodeEvent).order_by(NodeEvent.timestamp.desc()).limit(limit)
     )
     events = result.scalars().all()
     return [

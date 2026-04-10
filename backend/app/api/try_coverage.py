@@ -2,6 +2,7 @@
 Public coverage simulation endpoint for unauthenticated users.
 No auth, no persistence — GeoTIFF is returned directly in the response.
 """
+
 import asyncio
 import io
 import logging
@@ -70,9 +71,12 @@ class TrySimulationRequest(BaseModel):
     height_m: float = Field(default=3.0, ge=1.0, le=30.0)
     environment: Literal["auto", "urban", "suburban", "rural", "open"] = "auto"
     lora_preset: Literal[
-        "SHORT_FAST", "SHORT_SLOW",
-        "MEDIUM_FAST", "MEDIUM_SLOW",
-        "LONG_FAST", "LONG_SLOW",
+        "SHORT_FAST",
+        "SHORT_SLOW",
+        "MEDIUM_FAST",
+        "MEDIUM_SLOW",
+        "LONG_FAST",
+        "LONG_SLOW",
         "VERY_LONG_SLOW",
     ] = "MEDIUM_FAST"
 
@@ -108,7 +112,11 @@ async def try_simulate(
     clutter_m = resolve_clutter_height(body.environment, body.lat, body.lon)
     logger.info(
         "Try simulate: ip=%s hw=%s env=%s preset=%s → clutter=%.1fm",
-        client_ip, body.hardware_id, body.environment, body.lora_preset, clutter_m,
+        client_ip,
+        body.hardware_id,
+        body.environment,
+        body.lora_preset,
+        clutter_m,
     )
 
     req = CoveragePredictionRequest(

@@ -4,6 +4,7 @@ Revision ID: 0001
 Revises:
 Create Date: 2026-04-08
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -25,9 +26,15 @@ def upgrade() -> None:
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("manufacturer", sa.String(), nullable=False),
         sa.Column("tx_power_dbm", sa.Float(), nullable=False),
-        sa.Column("frequency_mhz", sa.Float(), nullable=False, server_default="869.525"),
-        sa.Column("rx_sensitivity_dbm", sa.Float(), nullable=False, server_default="-130"),
-        sa.Column("default_antenna_gain_dbi", sa.Float(), nullable=False, server_default="2"),
+        sa.Column(
+            "frequency_mhz", sa.Float(), nullable=False, server_default="869.525"
+        ),
+        sa.Column(
+            "rx_sensitivity_dbm", sa.Float(), nullable=False, server_default="-130"
+        ),
+        sa.Column(
+            "default_antenna_gain_dbi", sa.Float(), nullable=False, server_default="2"
+        ),
         sa.Column("description", sa.String(), nullable=True),
         sa.Column("is_custom", sa.Boolean(), server_default="false"),
     )
@@ -42,7 +49,12 @@ def upgrade() -> None:
         sa.Column("lon", sa.Float(), nullable=False),
         sa.Column("height_m", sa.Float(), nullable=False, server_default="2"),
         sa.Column("status", nodestatus, nullable=False, server_default="planned"),
-        sa.Column("hardware_id", sa.String(), sa.ForeignKey("hardware_profiles.id"), nullable=False),
+        sa.Column(
+            "hardware_id",
+            sa.String(),
+            sa.ForeignKey("hardware_profiles.id"),
+            nullable=False,
+        ),
         sa.Column("antenna_gain_dbi", sa.Float(), nullable=True),
         sa.Column("notes", sa.String(), nullable=True),
         sa.Column("created_by", sa.String(), nullable=False),
@@ -53,7 +65,13 @@ def upgrade() -> None:
     op.create_table(
         "coverage_cache",
         sa.Column("id", UUID(as_uuid=True), primary_key=True),
-        sa.Column("node_id", UUID(as_uuid=True), sa.ForeignKey("nodes.id"), nullable=False, unique=True),
+        sa.Column(
+            "node_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("nodes.id"),
+            nullable=False,
+            unique=True,
+        ),
         sa.Column("task_id", sa.String(), nullable=True),
         sa.Column("status", sa.String(), nullable=False, server_default="pending"),
         sa.Column("geotiff", sa.LargeBinary(), nullable=True),

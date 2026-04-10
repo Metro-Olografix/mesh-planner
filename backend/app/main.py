@@ -17,17 +17,13 @@ from app.services.hardware_seed import seed_hardware
 from app.api import coverage, events, hardware, nodes, pathfinder, try_coverage
 import app.models  # noqa: F401 — registers models with Base.metadata
 
-logging.basicConfig(
-    level=getattr(logging, settings.log_level.upper(), logging.INFO)
-)
+logging.basicConfig(level=getattr(logging, settings.log_level.upper(), logging.INFO))
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info(
-        "Starting up — running migrations and seeding hardware profiles..."
-    )
+    logger.info("Starting up — running migrations and seeding hardware profiles...")
     alembic_cfg = AlembicConfig("alembic.ini")
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, partial(command.upgrade, alembic_cfg, "head"))
@@ -97,7 +93,9 @@ async def custom_logo():
     if not path:
         raise HTTPException(status_code=404, detail="No custom logo configured")
     media_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
-    return FileResponse(path, media_type=media_type, headers={"Cache-Control": "public, max-age=3600"})
+    return FileResponse(
+        path, media_type=media_type, headers={"Cache-Control": "public, max-age=3600"}
+    )
 
 
 @app.get("/api/custom/favicon", include_in_schema=False)
@@ -107,4 +105,6 @@ async def custom_favicon():
     if not path:
         raise HTTPException(status_code=404, detail="No custom favicon configured")
     media_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
-    return FileResponse(path, media_type=media_type, headers={"Cache-Control": "public, max-age=3600"})
+    return FileResponse(
+        path, media_type=media_type, headers={"Cache-Control": "public, max-age=3600"}
+    )

@@ -8,22 +8,19 @@ Covers:
   - Max-min bottleneck Dijkstra (basic routing, unreachable nodes,
     single-hop, multi-hop, bottleneck selection, path reconstruction)
 """
+
 from __future__ import annotations
 
 import math
-import struct
-from typing import List, Optional
-from unittest.mock import patch
+from typing import Optional
 
 import numpy as np
 import pytest
-import rasterio
 from rasterio.io import MemoryFile
 from rasterio.transform import from_bounds
 
 from app.services.pathfinder import (
     COVERAGE_DYNAMIC_RANGE_DB,
-    LORA_PRESETS,
     GraphNode,
     _FRIIS_ONLY_PENALTY_DB,
     _LORA_MIN_SNR_DB,
@@ -39,6 +36,7 @@ from app.services.pathfinder import (
 # ---------------------------------------------------------------------------
 # Helpers: build test fixtures
 # ---------------------------------------------------------------------------
+
 
 def _make_node(
     idx: int,
@@ -58,8 +56,10 @@ def _make_node(
         idx=idx,
         node_id=node_id or f"node-{idx}",
         name=name or f"N{idx}",
-        lat=lat, lon=lon,
-        tx_dbm=tx_dbm, tx_gain_dbi=tx_gain_dbi,
+        lat=lat,
+        lon=lon,
+        tx_dbm=tx_dbm,
+        tx_gain_dbi=tx_gain_dbi,
         rx_gain_dbi=rx_gain_dbi,
         rx_sensitivity_dbm=rx_sensitivity_dbm,
         freq_mhz=freq_mhz,
@@ -68,10 +68,13 @@ def _make_node(
 
 
 def _make_geotiff(
-    lat_min: float, lat_max: float,
-    lon_min: float, lon_max: float,
+    lat_min: float,
+    lat_max: float,
+    lon_min: float,
+    lon_max: float,
     pixel_value: int = 200,
-    width: int = 10, height: int = 10,
+    width: int = 10,
+    height: int = 10,
 ) -> bytes:
     """Create a minimal in-memory GeoTIFF filled with *pixel_value*.
 
@@ -97,6 +100,7 @@ def _make_geotiff(
 # ---------------------------------------------------------------------------
 # 1. Unit tests — helper functions
 # ---------------------------------------------------------------------------
+
 
 class TestHaversine:
     def test_same_point_is_zero(self):
@@ -195,14 +199,20 @@ class TestSplatReadPixel:
 # 2. SNR matrix construction
 # ---------------------------------------------------------------------------
 
+
 class TestBuildSnrMatrix:
     """Tests for build_snr_matrix — the graph edge builder."""
 
     def _two_close_nodes(self, **overrides) -> list[GraphNode]:
         """Two nodes ~1.1 km apart in Abruzzo — well within LoRa range."""
-        defaults = dict(freq_mhz=868.0, lora_preset="MEDIUM_FAST",
-                        tx_dbm=17.0, tx_gain_dbi=2.0, rx_gain_dbi=2.0,
-                        rx_sensitivity_dbm=-137.0)
+        defaults = dict(
+            freq_mhz=868.0,
+            lora_preset="MEDIUM_FAST",
+            tx_dbm=17.0,
+            tx_gain_dbi=2.0,
+            rx_gain_dbi=2.0,
+            rx_sensitivity_dbm=-137.0,
+        )
         defaults.update(overrides)
         a = _make_node(0, lat=42.350, lon=14.150, name="A", **defaults)
         b = _make_node(1, lat=42.360, lon=14.150, name="B", **defaults)
@@ -319,10 +329,20 @@ class TestBuildSnrMatrix:
         """
         # We create two nodes close together so they have a link,
         # then verify the threshold check uses both SFs after the fix.
-        a = _make_node(0, lat=42.350, lon=14.150, lora_preset="SHORT_FAST",   # SF7
-                       freq_mhz=868.0)
-        b = _make_node(1, lat=42.360, lon=14.150, lora_preset="VERY_LONG_SLOW",  # SF12
-                       freq_mhz=868.0)
+        a = _make_node(
+            0,
+            lat=42.350,
+            lon=14.150,
+            lora_preset="SHORT_FAST",  # SF7
+            freq_mhz=868.0,
+        )
+        b = _make_node(
+            1,
+            lat=42.360,
+            lon=14.150,
+            lora_preset="VERY_LONG_SLOW",  # SF12
+            freq_mhz=868.0,
+        )
         m = build_snr_matrix([a, b], {})
         # At ~1 km with 17 dBm TX, SNR is very high so both thresholds pass.
         # The real test is when SNR is marginal — see parametric test below.
@@ -356,6 +376,7 @@ class TestBuildSnrMatrix:
 # ---------------------------------------------------------------------------
 # 3. Max-min bottleneck Dijkstra
 # ---------------------------------------------------------------------------
+
 
 class TestFindMaxMinSnrPath:
     """Tests for the modified Dijkstra algorithm."""
@@ -407,12 +428,15 @@ class TestFindMaxMinSnrPath:
         Should choose Path B (bottleneck 8 > 5).
         """
         nodes = self._nodes(4)
-        m = self._matrix_from_edges(4, [
-            (0, 1, 5.0),
-            (1, 3, 5.0),
-            (0, 2, 10.0),
-            (2, 3, 8.0),
-        ])
+        m = self._matrix_from_edges(
+            4,
+            [
+                (0, 1, 5.0),
+                (1, 3, 5.0),
+                (0, 2, 10.0),
+                (2, 3, 8.0),
+            ],
+        )
         path, snr = find_max_min_snr_path(nodes, m, 0, 3)
         assert path == [0, 2, 3]
         assert snr == 8.0
@@ -424,11 +448,14 @@ class TestFindMaxMinSnrPath:
         Should choose the longer path.
         """
         nodes = self._nodes(3)
-        m = self._matrix_from_edges(3, [
-            (0, 2, 3.0),
-            (0, 1, 10.0),
-            (1, 2, 9.0),
-        ])
+        m = self._matrix_from_edges(
+            3,
+            [
+                (0, 2, 3.0),
+                (0, 1, 10.0),
+                (1, 2, 9.0),
+            ],
+        )
         path, snr = find_max_min_snr_path(nodes, m, 0, 2)
         assert path == [0, 1, 2]
         assert snr == 9.0
@@ -440,11 +467,14 @@ class TestFindMaxMinSnrPath:
         Should choose the direct path.
         """
         nodes = self._nodes(3)
-        m = self._matrix_from_edges(3, [
-            (0, 2, 15.0),
-            (0, 1, 20.0),
-            (1, 2, 10.0),
-        ])
+        m = self._matrix_from_edges(
+            3,
+            [
+                (0, 2, 15.0),
+                (0, 1, 20.0),
+                (1, 2, 10.0),
+            ],
+        )
         path, snr = find_max_min_snr_path(nodes, m, 0, 2)
         assert path == [0, 2]
         assert snr == 15.0
@@ -452,12 +482,15 @@ class TestFindMaxMinSnrPath:
     def test_chain_bottleneck_is_weakest_link(self):
         """Linear chain 0→1→2→3→4, bottleneck is the weakest single hop."""
         nodes = self._nodes(5)
-        m = self._matrix_from_edges(5, [
-            (0, 1, 20.0),
-            (1, 2, 12.0),
-            (2, 3, 7.0),   # weakest
-            (3, 4, 15.0),
-        ])
+        m = self._matrix_from_edges(
+            5,
+            [
+                (0, 1, 20.0),
+                (1, 2, 12.0),
+                (2, 3, 7.0),  # weakest
+                (3, 4, 15.0),
+            ],
+        )
         path, snr = find_max_min_snr_path(nodes, m, 0, 4)
         assert path == [0, 1, 2, 3, 4]
         assert snr == 7.0
@@ -474,10 +507,13 @@ class TestFindMaxMinSnrPath:
     def test_disconnected_component(self):
         """Two separate components — path across them should fail."""
         nodes = self._nodes(4)
-        m = self._matrix_from_edges(4, [
-            (0, 1, 10.0),  # component 1
-            (2, 3, 10.0),  # component 2
-        ])
+        m = self._matrix_from_edges(
+            4,
+            [
+                (0, 1, 10.0),  # component 1
+                (2, 3, 10.0),  # component 2
+            ],
+        )
         path, snr = find_max_min_snr_path(nodes, m, 0, 3)
         assert path is None
         assert snr is None
@@ -509,11 +545,14 @@ class TestFindMaxMinSnrPath:
     def test_negative_snr_values(self):
         """Negative SNR values (weak links) should still be handled correctly."""
         nodes = self._nodes(3)
-        m = self._matrix_from_edges(3, [
-            (0, 1, -5.0),
-            (1, 2, -10.0),
-            (0, 2, -15.0),
-        ])
+        m = self._matrix_from_edges(
+            3,
+            [
+                (0, 1, -5.0),
+                (1, 2, -10.0),
+                (0, 2, -15.0),
+            ],
+        )
         path, snr = find_max_min_snr_path(nodes, m, 0, 2)
         # Path 0→1→2 bottleneck = -10, path 0→2 bottleneck = -15
         # Should choose 0→1→2 (better bottleneck)
@@ -523,12 +562,15 @@ class TestFindMaxMinSnrPath:
     def test_equal_bottleneck_paths(self):
         """When two paths have the same bottleneck, either is acceptable."""
         nodes = self._nodes(4)
-        m = self._matrix_from_edges(4, [
-            (0, 1, 10.0),
-            (1, 3, 8.0),
-            (0, 2, 10.0),
-            (2, 3, 8.0),
-        ])
+        m = self._matrix_from_edges(
+            4,
+            [
+                (0, 1, 10.0),
+                (1, 3, 8.0),
+                (0, 2, 10.0),
+                (2, 3, 8.0),
+            ],
+        )
         path, snr = find_max_min_snr_path(nodes, m, 0, 3)
         assert snr == 8.0
         assert path[0] == 0
@@ -540,6 +582,7 @@ class TestFindMaxMinSnrPath:
 # 4. Integration: matrix + pathfinding together
 # ---------------------------------------------------------------------------
 
+
 class TestEndToEnd:
     """Tests that build the matrix from GraphNodes and then run pathfinding."""
 
@@ -547,7 +590,9 @@ class TestEndToEnd:
         """A → B → C where A-C can't reach directly but A-B and B-C can."""
         a = _make_node(0, lat=42.35, lon=14.15, name="A")
         b = _make_node(1, lat=42.36, lon=14.15, name="B")  # ~1.1 km from A
-        c = _make_node(2, lat=42.37, lon=14.15, name="C")  # ~1.1 km from B, ~2.2 km from A
+        c = _make_node(
+            2, lat=42.37, lon=14.15, name="C"
+        )  # ~1.1 km from B, ~2.2 km from A
         nodes = [a, b, c]
         m = build_snr_matrix(nodes, {})
         # All should be reachable at this distance with LoRa

@@ -11,6 +11,7 @@ without authentication. GDAL/rasterio fetches only the compressed block that
 contains the requested pixel via HTTP range requests, so no full tile is
 downloaded.
 """
+
 from __future__ import annotations
 
 import logging
@@ -23,26 +24,26 @@ logger = logging.getLogger(__name__)
 # ── Manual environment presets ─────────────────────────────────────────────���──
 
 ENVIRONMENT_HEIGHTS: dict[str, float] = {
-    "urban":    10.0,   # dense city buildings (~3-4 floors)
-    "suburban":  5.0,   # low-rise residential / mixed
-    "rural":     2.0,   # scattered structures, hedges
-    "open":      0.0,   # fields, water, airport
+    "urban": 10.0,  # dense city buildings (~3-4 floors)
+    "suburban": 5.0,  # low-rise residential / mixed
+    "rural": 2.0,  # scattered structures, hedges
+    "open": 0.0,  # fields, water, airport
 }
 
 # ── ESA WorldCover 2021 land-cover class → obstacle height (m) ──────────────���
 # https://worldcover2021.esa.int/
 WORLDCOVER_HEIGHTS: dict[int, float] = {
-    10:  8.0,   # Tree cover
-    20:  3.0,   # Shrubland
-    30:  0.5,   # Grassland
-    40:  0.5,   # Cropland
-    50: 10.0,   # Built-up
-    60:  0.0,   # Bare / sparse vegetation
-    70:  0.0,   # Snow and ice
-    80:  0.0,   # Permanent water bodies
-    90:  1.5,   # Herbaceous wetland
-    95:  4.0,   # Mangroves
-   100:  0.5,   # Moss and lichen
+    10: 8.0,  # Tree cover
+    20: 3.0,  # Shrubland
+    30: 0.5,  # Grassland
+    40: 0.5,  # Cropland
+    50: 10.0,  # Built-up
+    60: 0.0,  # Bare / sparse vegetation
+    70: 0.0,  # Snow and ice
+    80: 0.0,  # Permanent water bodies
+    90: 1.5,  # Herbaceous wetland
+    95: 4.0,  # Mangroves
+    100: 0.5,  # Moss and lichen
 }
 
 _WORLDCOVER_BUCKET_URL = (
@@ -75,9 +76,19 @@ def _tile_name(lat: float, lon: float) -> str:
 
 
 _LC_NAMES = {
-    10: "trees", 20: "shrub", 30: "grass", 40: "crop", 50: "built-up",
-    60: "bare", 70: "snow", 80: "water", 90: "wetland", 95: "mangrove", 100: "moss",
+    10: "trees",
+    20: "shrub",
+    30: "grass",
+    40: "crop",
+    50: "built-up",
+    60: "bare",
+    70: "snow",
+    80: "water",
+    90: "wetland",
+    95: "mangrove",
+    100: "moss",
 }
+
 
 def _sample_worldcover(lat: float, lon: float) -> Optional[float]:
     """
@@ -97,7 +108,7 @@ def _sample_worldcover(lat: float, lon: float) -> Optional[float]:
             "CPL_VSIL_CURL_ALLOWED_EXTENSIONS": ".tif",
             "GDAL_HTTP_CONNECTTIMEOUT": "10",
             "GDAL_HTTP_TIMEOUT": "30",
-            "GDAL_HTTP_FOLLOWREDIRECTS": "YES",   # follow S3 regional redirects
+            "GDAL_HTTP_FOLLOWREDIRECTS": "YES",  # follow S3 regional redirects
         }
 
         urls = [
@@ -112,14 +123,24 @@ def _sample_worldcover(lat: float, lon: float) -> Optional[float]:
                     with rasterio.open(url) as ds:
                         row, col = ds.index(lon, lat)
                         if row < 0 or col < 0 or row >= ds.height or col >= ds.width:
-                            logger.warning("WorldCover: (%.4f, %.4f) out of tile bounds", lat, lon)
+                            logger.warning(
+                                "WorldCover: (%.4f, %.4f) out of tile bounds", lat, lon
+                            )
                             return None
-                        val = int(ds.read(1, window=rasterio.windows.Window(col, row, 1, 1))[0, 0])
+                        val = int(
+                            ds.read(1, window=rasterio.windows.Window(col, row, 1, 1))[
+                                0, 0
+                            ]
+                        )
 
                 height = WORLDCOVER_HEIGHTS.get(val, 2.0)
                 logger.info(
                     "WorldCover: (%.4f, %.4f) → class %d (%s) → %.1f m clutter",
-                    lat, lon, val, _LC_NAMES.get(val, "unknown"), height,
+                    lat,
+                    lon,
+                    val,
+                    _LC_NAMES.get(val, "unknown"),
+                    height,
                 )
                 return height
             except Exception as exc:
@@ -127,7 +148,9 @@ def _sample_worldcover(lat: float, lon: float) -> Optional[float]:
                 logger.debug("WorldCover URL failed (%s): %s", url, exc)
                 continue
 
-        logger.warning("WorldCover lookup failed for (%.4f, %.4f): %s", lat, lon, last_exc)
+        logger.warning(
+            "WorldCover lookup failed for (%.4f, %.4f): %s", lat, lon, last_exc
+        )
         return None
 
     except Exception as exc:
@@ -151,7 +174,7 @@ def resolve_clutter_height(environment: str, lat: float, lon: float) -> float:
             return _cache[key]
 
     height = _sample_worldcover(lat, lon)
-    result = height if height is not None else 5.0   # suburban as safe default
+    result = height if height is not None else 5.0  # suburban as safe default
     with _cache_lock:
         _cache[key] = result
     return result

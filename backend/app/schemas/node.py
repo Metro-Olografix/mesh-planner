@@ -76,6 +76,7 @@ class NodeOut(BaseModel):
 class NodePublicOut(BaseModel):
     """Stripped-down node response for unauthenticated (public) requests.
     Coordinates are fuzzed server-side; sensitive fields are omitted."""
+
     id: UUID
     name: str
     lat: float

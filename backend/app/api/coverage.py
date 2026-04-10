@@ -1,6 +1,7 @@
 """
 Coverage API: trigger SPLAT! simulations per node and serve the resulting GeoTIFF.
 """
+
 import asyncio
 import io
 import logging
@@ -52,13 +53,19 @@ async def _run_splat(node_id: UUID) -> None:
     async with AsyncSessionLocal() as db:
         node = await _get_node_with_coverage(db, node_id)
         hw = node.hardware
-        gain = node.antenna_gain_dbi if node.antenna_gain_dbi is not None else hw.default_antenna_gain_dbi
+        gain = (
+            node.antenna_gain_dbi
+            if node.antenna_gain_dbi is not None
+            else hw.default_antenna_gain_dbi
+        )
 
         environment = getattr(node, "environment", "auto") or "auto"
         clutter_m = resolve_clutter_height(environment, node.lat, node.lon)
         logger.info(
             "Node %s: environment=%s → clutter_height=%.1f m",
-            node.name, environment, clutter_m,
+            node.name,
+            environment,
+            clutter_m,
         )
 
         high_res = getattr(node, "high_resolution", True)
@@ -92,9 +99,7 @@ async def _run_splat(node_id: UUID) -> None:
             # Run the blocking SPLAT! subprocess in a thread pool so the
             # async event loop stays responsive during the computation.
             loop = asyncio.get_running_loop()
-            geotiff = await loop.run_in_executor(
-                None, _splat.coverage_prediction, req
-            )
+            geotiff = await loop.run_in_executor(None, _splat.coverage_prediction, req)
             cache.geotiff = geotiff
             cache.status = "completed"
             cache.computed_at = datetime.utcnow()
@@ -105,11 +110,14 @@ async def _run_splat(node_id: UUID) -> None:
             logger.error("SPLAT! failed for node %s: %s", node_id, exc)
 
         await db.commit()
-        await sse_manager.broadcast("coverage_updated", {
-            "id": str(node_id),
-            "name": node.name,
-            "status": cache.status,
-        })
+        await sse_manager.broadcast(
+            "coverage_updated",
+            {
+                "id": str(node_id),
+                "name": node.name,
+                "status": cache.status,
+            },
+        )
 
 
 @router.post("/{node_id}/invalidate", status_code=200)
@@ -125,7 +133,9 @@ async def invalidate_coverage(
         await db.commit()
         logger.info("Coverage invalidated for node %s by user", node_id)
     else:
-        logger.info("Invalidate requested for node %s but no coverage cache exists", node_id)
+        logger.info(
+            "Invalidate requested for node %s but no coverage cache exists", node_id
+        )
     return {"status": "invalidated", "node_id": str(node_id)}
 
 
@@ -154,13 +164,17 @@ async def trigger_coverage(
     user: dict = Depends(get_current_user),
 ):
     """Enqueue a SPLAT! coverage computation for a node."""
-    await _get_node_with_coverage(db, node_id)   # 404 if not found
+    await _get_node_with_coverage(db, node_id)  # 404 if not found
     background_tasks.add_task(_run_splat, node_id)
     return {"status": "queued", "node_id": str(node_id)}
 
 
 @router.get("/{node_id}/status")
-async def coverage_status(node_id: UUID, db: AsyncSession = Depends(get_db), user: dict | None = Depends(get_optional_user)):
+async def coverage_status(
+    node_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user: dict | None = Depends(get_optional_user),
+):
     node = await _get_node_with_coverage(db, node_id)
     if not node.coverage:
         return {"status": "none"}
@@ -172,7 +186,11 @@ async def coverage_status(node_id: UUID, db: AsyncSession = Depends(get_db), use
 
 
 @router.get("/{node_id}/geotiff")
-async def get_geotiff(node_id: UUID, db: AsyncSession = Depends(get_db), user: dict = Depends(get_current_user)):
+async def get_geotiff(
+    node_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
     """Stream the GeoTIFF coverage raster for a node."""
     node = await _get_node_with_coverage(db, node_id)
     if not node.coverage or not node.coverage.geotiff:
@@ -191,9 +209,7 @@ async def recompute_all_coverage(
     user: dict = Depends(get_current_user),
 ):
     """Invalidate and recompute coverage for ALL nodes."""
-    result = await db.execute(
-        select(Node).options(selectinload(Node.coverage))
-    )
+    result = await db.execute(select(Node).options(selectinload(Node.coverage)))
     nodes = result.scalars().all()
     count = 0
     for n in nodes:

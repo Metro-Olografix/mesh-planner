@@ -8,6 +8,7 @@ bidirectionally — both TX→RX and RX→TX must have coverage, and the edge we
 uses the weaker of the two directions.  When no SPLAT! data exists, Friis
 free-space is used with a penalty to prefer terrain-validated hops.
 """
+
 from __future__ import annotations
 
 import heapq
@@ -21,16 +22,16 @@ from rasterio.io import MemoryFile
 # Each entry: (spreading_factor, bandwidth_hz, receiver_noise_figure_db)
 # Bandwidth determines the thermal noise floor; SF determines demodulation
 # sensitivity (already encoded in hw.rx_sensitivity_dbm, so NF is kept fixed).
-_LORA_NF_DB = 6.0   # SX1262 typical receiver noise figure
+_LORA_NF_DB = 6.0  # SX1262 typical receiver noise figure
 
 LORA_PRESETS: dict[str, dict] = {
-    "SHORT_FAST":      {"sf": 7,  "bw_hz": 500_000},
-    "SHORT_SLOW":      {"sf": 8,  "bw_hz": 250_000},
-    "MEDIUM_FAST":     {"sf": 9,  "bw_hz": 250_000},
-    "MEDIUM_SLOW":     {"sf": 10, "bw_hz": 250_000},
-    "LONG_FAST":       {"sf": 11, "bw_hz": 250_000},
-    "LONG_SLOW":       {"sf": 12, "bw_hz": 125_000},
-    "VERY_LONG_SLOW":  {"sf": 12, "bw_hz": 125_000},
+    "SHORT_FAST": {"sf": 7, "bw_hz": 500_000},
+    "SHORT_SLOW": {"sf": 8, "bw_hz": 250_000},
+    "MEDIUM_FAST": {"sf": 9, "bw_hz": 250_000},
+    "MEDIUM_SLOW": {"sf": 10, "bw_hz": 250_000},
+    "LONG_FAST": {"sf": 11, "bw_hz": 250_000},
+    "LONG_SLOW": {"sf": 12, "bw_hz": 125_000},
+    "VERY_LONG_SLOW": {"sf": 12, "bw_hz": 125_000},
 }
 _DEFAULT_PRESET = "MEDIUM_FAST"
 
@@ -42,9 +43,9 @@ COVERAGE_DYNAMIC_RANGE_DB = 50.0
 # Minimum required SNR (dB) per LoRa spreading factor for successful
 # demodulation (from Semtech SX1262 datasheet, Table 11-2).
 _LORA_MIN_SNR_DB: dict[int, float] = {
-    7:  -7.5,
-    8:  -10.0,
-    9:  -12.5,
+    7: -7.5,
+    8: -10.0,
+    9: -12.5,
     10: -15.0,
     11: -17.5,
     12: -20.0,
@@ -63,7 +64,10 @@ def haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
     dphi = math.radians(lat2 - lat1)
     dlambda = math.radians(lon2 - lon1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    a = (
+        math.sin(dphi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    )
     return R * 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
 
 
@@ -90,12 +94,15 @@ def _splat_read_pixel(geotiff_bytes: bytes, lat: float, lon: float) -> Optional[
     """
     try:
         import rasterio.windows
+
         with MemoryFile(geotiff_bytes) as mf:
             with mf.open() as ds:
                 row, col = ds.index(lon, lat)
                 if row < 0 or col < 0 or row >= ds.height or col >= ds.width:
                     return None
-                val = int(ds.read(1, window=rasterio.windows.Window(col, row, 1, 1))[0, 0])
+                val = int(
+                    ds.read(1, window=rasterio.windows.Window(col, row, 1, 1))[0, 0]
+                )
                 if val == ds.nodata or val == 255:
                     return None
                 return val
@@ -119,7 +126,7 @@ def _splat_pixel_to_dbm(pixel: int, rx_sensitivity_dbm: float) -> float:
 @dataclass
 class GraphNode:
     idx: int
-    node_id: Optional[object]   # UUID or None for virtual endpoints
+    node_id: Optional[object]  # UUID or None for virtual endpoints
     name: str
     lat: float
     lon: float
@@ -139,7 +146,7 @@ _FRIIS_ONLY_PENALTY_DB = 15.0
 
 def build_snr_matrix(
     graph_nodes: List[GraphNode],
-    coverage_data: dict,   # {str(node_id): geotiff_bytes}
+    coverage_data: dict,  # {str(node_id): geotiff_bytes}
 ) -> List[List[Optional[float]]]:
     """
     Build an n×n SNR matrix.
@@ -171,12 +178,14 @@ def build_snr_matrix(
             if i == j:
                 continue
             if tx.freq_mhz != rx.freq_mhz:
-                continue   # nodes on different frequencies cannot communicate
+                continue  # nodes on different frequencies cannot communicate
             dist = haversine_m(tx.lat, tx.lon, rx.lat, rx.lon)
-            friis_rx = friis_rx_dbm(tx.tx_dbm, tx.tx_gain_dbi, rx.rx_gain_dbi, tx.freq_mhz, dist)
+            friis_rx = friis_rx_dbm(
+                tx.tx_dbm, tx.tx_gain_dbi, rx.rx_gain_dbi, tx.freq_mhz, dist
+            )
 
             if friis_rx <= rx.rx_sensitivity_dbm:
-                continue   # link too weak even in free space
+                continue  # link too weak even in free space
 
             # ── Bidirectional SPLAT! validation ──────────────────────────
             # If SPLAT! data exists for the TX node, the RX location must
@@ -190,13 +199,13 @@ def build_snr_matrix(
             if tx_cov:
                 tx_pixel = _splat_read_pixel(tx_cov, rx.lat, rx.lon)
                 if tx_pixel is None:
-                    continue   # TX coverage says RX location is unreachable
+                    continue  # TX coverage says RX location is unreachable
 
             reverse_pixel: Optional[int] = None
             if rx_cov:
                 reverse_pixel = _splat_read_pixel(rx_cov, tx.lat, tx.lon)
                 if reverse_pixel is None:
-                    continue   # reverse direction blocked by terrain
+                    continue  # reverse direction blocked by terrain
 
             # ── Compute SNR using terrain data when available ────────────
             nf = noise_floor_dbm(rx.lora_preset)
@@ -215,7 +224,9 @@ def build_snr_matrix(
                 rev_snr = rev_rx_dbm - rev_nf
             else:
                 # Friis for reverse: RX node transmits, TX node receives
-                rev_friis = friis_rx_dbm(rx.tx_dbm, rx.tx_gain_dbi, tx.rx_gain_dbi, rx.freq_mhz, dist)
+                rev_friis = friis_rx_dbm(
+                    rx.tx_dbm, rx.tx_gain_dbi, tx.rx_gain_dbi, rx.freq_mhz, dist
+                )
                 rev_nf = noise_floor_dbm(tx.lora_preset)
                 rev_snr = rev_friis - rev_nf - _FRIIS_ONLY_PENALTY_DB
 
@@ -225,8 +236,12 @@ def build_snr_matrix(
             # ── Reject links below LoRa demodulation threshold ───────────
             # Check each direction against its own receiver's SF threshold:
             # forward (TX→RX) must meet RX's SF, reverse (RX→TX) must meet TX's SF.
-            rx_sf = LORA_PRESETS.get(rx.lora_preset, LORA_PRESETS[_DEFAULT_PRESET])["sf"]
-            tx_sf = LORA_PRESETS.get(tx.lora_preset, LORA_PRESETS[_DEFAULT_PRESET])["sf"]
+            rx_sf = LORA_PRESETS.get(rx.lora_preset, LORA_PRESETS[_DEFAULT_PRESET])[
+                "sf"
+            ]
+            tx_sf = LORA_PRESETS.get(tx.lora_preset, LORA_PRESETS[_DEFAULT_PRESET])[
+                "sf"
+            ]
             if fwd_snr < _LORA_MIN_SNR_DB.get(rx_sf, -20.0):
                 continue
             if rev_snr < _LORA_MIN_SNR_DB.get(tx_sf, -20.0):

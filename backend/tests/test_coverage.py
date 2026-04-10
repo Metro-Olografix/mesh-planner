@@ -7,19 +7,15 @@ Covers:
   - clutter.py: preset environments, tile naming, auto-mode fallback
   - coverage_request.py: field validation
 """
+
 from __future__ import annotations
 
-import io
-import math
-import struct
 import textwrap
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import numpy as np
 import pytest
-import rasterio
 from rasterio.io import MemoryFile
-from rasterio.transform import from_bounds
 
 from app.models.coverage_request import CoveragePredictionRequest
 from app.services.clutter import (
@@ -34,6 +30,7 @@ from app.services.splat import Splat
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_ppm(width: int, height: int, rgb: tuple[int, int, int]) -> bytes:
     """Create a minimal PPM (P6) image filled with a single RGB colour."""
@@ -63,6 +60,7 @@ def _make_kml(north: float, south: float, east: float, west: float) -> bytes:
 # ---------------------------------------------------------------------------
 # 1. _calculate_required_terrain_tiles
 # ---------------------------------------------------------------------------
+
 
 class TestCalculateRequiredTiles:
     def test_single_tile_small_radius(self):
@@ -111,6 +109,7 @@ class TestCalculateRequiredTiles:
 # 2. _hgt_filename_to_sdf_filename
 # ---------------------------------------------------------------------------
 
+
 class TestHgtToSdfFilename:
     def test_north_east(self):
         result = Splat._hgt_filename_to_sdf_filename("N42E014.hgt.gz")
@@ -137,11 +136,15 @@ class TestHgtToSdfFilename:
         assert "-11:-10" in result
 
     def test_hd_suffix(self):
-        result = Splat._hgt_filename_to_sdf_filename("N42E014.hgt.gz", high_resolution=True)
+        result = Splat._hgt_filename_to_sdf_filename(
+            "N42E014.hgt.gz", high_resolution=True
+        )
         assert result.endswith("-hd.sdf")
 
     def test_standard_suffix(self):
-        result = Splat._hgt_filename_to_sdf_filename("N42E014.hgt.gz", high_resolution=False)
+        result = Splat._hgt_filename_to_sdf_filename(
+            "N42E014.hgt.gz", high_resolution=False
+        )
         assert result.endswith(".sdf")
         assert not result.endswith("-hd.sdf")
 
@@ -149,6 +152,7 @@ class TestHgtToSdfFilename:
 # ---------------------------------------------------------------------------
 # 3. _create_splat_qth
 # ---------------------------------------------------------------------------
+
 
 class TestCreateSplatQth:
     def test_basic_format(self):
@@ -190,6 +194,7 @@ class TestCreateSplatQth:
 # 4. _create_splat_lrp
 # ---------------------------------------------------------------------------
 
+
 class TestCreateSplatLrp:
     def _make_lrp(self, **overrides) -> str:
         defaults = dict(
@@ -210,56 +215,65 @@ class TestCreateSplatLrp:
 
     def test_returns_bytes(self):
         result = Splat._create_splat_lrp(
-            ground_dielectric=15.0, ground_conductivity=0.005,
-            atmosphere_bending=301.0, frequency_mhz=868.0,
-            radio_climate="continental_temperate", polarization="vertical",
-            situation_fraction=50.0, time_fraction=90.0,
-            tx_power=17.0, tx_gain=2.0, system_loss=2.0,
+            ground_dielectric=15.0,
+            ground_conductivity=0.005,
+            atmosphere_bending=301.0,
+            frequency_mhz=868.0,
+            radio_climate="continental_temperate",
+            polarization="vertical",
+            situation_fraction=50.0,
+            time_fraction=90.0,
+            tx_power=17.0,
+            tx_gain=2.0,
+            system_loss=2.0,
         )
         assert isinstance(result, bytes)
 
     def test_climate_enumeration(self):
         climates = {
-            "equatorial": 1, "continental_subtropical": 2,
-            "maritime_subtropical": 3, "desert": 4,
-            "continental_temperate": 5, "maritime_temperate_land": 6,
+            "equatorial": 1,
+            "continental_subtropical": 2,
+            "maritime_subtropical": 3,
+            "desert": 4,
+            "continental_temperate": 5,
+            "maritime_temperate_land": 6,
             "maritime_temperate_sea": 7,
         }
         for name, expected_int in climates.items():
             content = self._make_lrp(radio_climate=name)
-            lines = [l.split(";")[0].strip() for l in content.strip().split("\n")]
+            lines = [ln.split(";")[0].strip() for ln in content.strip().split("\n")]
             assert lines[4] == str(expected_int), f"{name} should map to {expected_int}"
 
     def test_polarization_enumeration(self):
         h_content = self._make_lrp(polarization="horizontal")
         v_content = self._make_lrp(polarization="vertical")
-        h_line = [l.split(";")[0].strip() for l in h_content.split("\n")][5]
-        v_line = [l.split(";")[0].strip() for l in v_content.split("\n")][5]
+        h_line = [ln.split(";")[0].strip() for ln in h_content.split("\n")][5]
+        v_line = [ln.split(";")[0].strip() for ln in v_content.split("\n")][5]
         assert h_line == "0"
         assert v_line == "1"
 
     def test_situation_fraction_normalized(self):
         content = self._make_lrp(situation_fraction=50.0)
-        lines = [l.split(";")[0].strip() for l in content.strip().split("\n")]
+        lines = [ln.split(";")[0].strip() for ln in content.strip().split("\n")]
         assert float(lines[6]) == pytest.approx(0.50)
 
     def test_time_fraction_normalized(self):
         content = self._make_lrp(time_fraction=90.0)
-        lines = [l.split(";")[0].strip() for l in content.strip().split("\n")]
+        lines = [ln.split(";")[0].strip() for ln in content.strip().split("\n")]
         assert float(lines[7]) == pytest.approx(0.90)
 
     def test_erp_calculation(self):
         # ERP = 10^((tx_power + tx_gain - system_loss - 30) / 10) Watts
         # The LRP file formats ERP with %.2f, so we allow rounding tolerance.
         content = self._make_lrp(tx_power=17.0, tx_gain=2.0, system_loss=2.0)
-        lines = [l.split(";")[0].strip() for l in content.strip().split("\n")]
+        lines = [ln.split(";")[0].strip() for ln in content.strip().split("\n")]
         expected_erp = 10 ** ((17.0 + 2.0 - 2.0 - 30) / 10)
         assert float(lines[8]) == pytest.approx(expected_erp, abs=0.01)
 
     def test_erp_with_zero_gain_loss(self):
         # 20 dBm, 0 dB gain, 0 dB loss → 10^((20-30)/10) = 0.1 W
         content = self._make_lrp(tx_power=20.0, tx_gain=0.0, system_loss=0.0)
-        lines = [l.split(";")[0].strip() for l in content.strip().split("\n")]
+        lines = [ln.split(";")[0].strip() for ln in content.strip().split("\n")]
         assert float(lines[8]) == pytest.approx(0.1, rel=1e-3)
 
     def test_frequency_in_content(self):
@@ -271,6 +285,7 @@ class TestCreateSplatLrp:
 # 5. _create_splat_dcf
 # ---------------------------------------------------------------------------
 
+
 class TestCreateSplatDcf:
     def test_returns_bytes(self):
         result = Splat._create_splat_dcf("plasma", -130.0, -80.0)
@@ -278,31 +293,41 @@ class TestCreateSplatDcf:
 
     def test_has_32_levels(self):
         content = Splat._create_splat_dcf("plasma", -130.0, -80.0).decode()
-        data_lines = [l for l in content.split("\n") if l.strip() and not l.startswith(";")]
+        data_lines = [
+            ln for ln in content.split("\n") if ln.strip() and not ln.startswith(";")
+        ]
         assert len(data_lines) == 32
 
     def test_levels_from_max_to_min(self):
         content = Splat._create_splat_dcf("plasma", -130.0, -80.0).decode()
-        data_lines = [l for l in content.split("\n") if l.strip() and not l.startswith(";")]
+        data_lines = [
+            ln for ln in content.split("\n") if ln.strip() and not ln.startswith(";")
+        ]
         first_dbm = int(data_lines[0].split(":")[0].strip())
         last_dbm = int(data_lines[-1].split(":")[0].strip())
         assert first_dbm > last_dbm  # max at top, min at bottom
 
     def test_max_dbm_is_first_level(self):
         content = Splat._create_splat_dcf("plasma", -130.0, -80.0).decode()
-        data_lines = [l for l in content.split("\n") if l.strip() and not l.startswith(";")]
+        data_lines = [
+            ln for ln in content.split("\n") if ln.strip() and not ln.startswith(";")
+        ]
         first_dbm = int(data_lines[0].split(":")[0].strip())
         assert first_dbm == -80
 
     def test_min_dbm_is_last_level(self):
         content = Splat._create_splat_dcf("plasma", -130.0, -80.0).decode()
-        data_lines = [l for l in content.split("\n") if l.strip() and not l.startswith(";")]
+        data_lines = [
+            ln for ln in content.split("\n") if ln.strip() and not ln.startswith(";")
+        ]
         last_dbm = int(data_lines[-1].split(":")[0].strip())
         assert last_dbm == -130
 
     def test_rgb_values_in_range(self):
         content = Splat._create_splat_dcf("plasma", -130.0, -80.0).decode()
-        data_lines = [l for l in content.split("\n") if l.strip() and not l.startswith(";")]
+        data_lines = [
+            ln for ln in content.split("\n") if ln.strip() and not ln.startswith(";")
+        ]
         for line in data_lines:
             rgb_part = line.split(":")[1]
             r, g, b = [int(x) for x in rgb_part.split(",")]
@@ -319,6 +344,7 @@ class TestCreateSplatDcf:
 # ---------------------------------------------------------------------------
 # 6. create_splat_colorbar
 # ---------------------------------------------------------------------------
+
 
 class TestCreateSplatColorbar:
     def test_returns_list(self):
@@ -348,12 +374,23 @@ class TestCreateSplatColorbar:
 # 7. _create_splat_geotiff
 # ---------------------------------------------------------------------------
 
+
 class TestCreateSplatGeotiff:
     """Test GeoTIFF generation from PPM + KML."""
 
-    def _run(self, rgb=(200, 50, 150), width=10, height=10,
-             north=43.0, south=42.0, east=15.0, west=14.0,
-             colormap="plasma", min_dbm=-137.0, max_dbm=-87.0):
+    def _run(
+        self,
+        rgb=(200, 50, 150),
+        width=10,
+        height=10,
+        north=43.0,
+        south=42.0,
+        east=15.0,
+        west=14.0,
+        colormap="plasma",
+        min_dbm=-137.0,
+        max_dbm=-87.0,
+    ):
         ppm = _make_ppm(width, height, rgb)
         kml = _make_kml(north, south, east, west)
         return Splat._create_splat_geotiff(ppm, kml, colormap, min_dbm, max_dbm)
@@ -414,6 +451,7 @@ class TestCreateSplatGeotiff:
     def test_colormap_pixel_reverse_maps_to_valid_index(self):
         """A pixel from the colormap itself should reverse-map to a non-nodata index."""
         import matplotlib.pyplot as mpl_plt
+
         cmap = mpl_plt.get_cmap("plasma", 256)
         norm = mpl_plt.Normalize(vmin=-137.0, vmax=-87.0)
         # Pick the middle value in the colormap
@@ -435,10 +473,13 @@ class TestCreateSplatGeotiff:
 # 8. clutter.py — _tile_name
 # ---------------------------------------------------------------------------
 
+
 class TestTileName:
     def test_ne_quadrant(self):
         # 42.45°N, 14.22°E → SW corner is N42E012 (floor(42/3)*3=42, floor(14/3)*3=12)
-        assert _tile_name(42.45, 14.22) == "ESA_WorldCover_10m_2021_v200_N42E012_Map.tif"
+        assert (
+            _tile_name(42.45, 14.22) == "ESA_WorldCover_10m_2021_v200_N42E012_Map.tif"
+        )
 
     def test_nw_quadrant(self):
         # 51.5°N, -0.5°W → SW corner: floor(51/3)*3=51, floor(-0.5/3)*3=-3
@@ -446,7 +487,9 @@ class TestTileName:
 
     def test_sw_quadrant(self):
         # -33.9°S, -70.6°W → floor(-33.9/3)*3=-36, floor(-70.6/3)*3=-72
-        assert _tile_name(-33.9, -70.6) == "ESA_WorldCover_10m_2021_v200_S36W072_Map.tif"
+        assert (
+            _tile_name(-33.9, -70.6) == "ESA_WorldCover_10m_2021_v200_S36W072_Map.tif"
+        )
 
     def test_se_quadrant(self):
         # -10.5°S, 30.2°E → floor(-10.5/3)*3=-12, floor(30.2/3)*3=30
@@ -466,10 +509,12 @@ class TestTileName:
 # 9. clutter.py — resolve_clutter_height (presets)
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(autouse=False)
 def clear_clutter_cache():
     """Ensure the in-process clutter cache is empty before each test that uses it."""
     import app.services.clutter as clutter_mod
+
     clutter_mod._cache.clear()
     yield
     clutter_mod._cache.clear()
@@ -484,7 +529,10 @@ class TestResolveClutterHeight:
         assert resolve_clutter_height("urban", 0.0, 0.0) == ENVIRONMENT_HEIGHTS["urban"]
 
     def test_suburban_preset(self):
-        assert resolve_clutter_height("suburban", 0.0, 0.0) == ENVIRONMENT_HEIGHTS["suburban"]
+        assert (
+            resolve_clutter_height("suburban", 0.0, 0.0)
+            == ENVIRONMENT_HEIGHTS["suburban"]
+        )
 
     def test_rural_preset(self):
         assert resolve_clutter_height("rural", 0.0, 0.0) == ENVIRONMENT_HEIGHTS["rural"]
@@ -512,6 +560,7 @@ class TestResolveClutterHeight:
     def test_auto_caches_result(self):
         """Second call with identical coordinates should not re-query WorldCover."""
         call_count = 0
+
         def mock_sample(lat, lon):
             nonlocal call_count
             call_count += 1
@@ -521,7 +570,7 @@ class TestResolveClutterHeight:
             r1 = resolve_clutter_height("auto", 42.1234, 14.1234)
             r2 = resolve_clutter_height("auto", 42.1234, 14.1234)  # exact same key
 
-        assert call_count == 1   # WorldCover queried only once
+        assert call_count == 1  # WorldCover queried only once
         assert r1 == r2 == 3.0
 
     def test_worldcover_heights_mapping_completeness(self):
@@ -538,14 +587,24 @@ class TestResolveClutterHeight:
 # 10. CoveragePredictionRequest — validation
 # ---------------------------------------------------------------------------
 
+
 class TestCoveragePredictionRequest:
     def _base(self, **overrides) -> dict:
         base = dict(
-            lat=42.0, lon=14.0, tx_height=10.0, tx_power=17.0,
-            tx_gain=2.0, frequency_mhz=868.0, rx_height=1.5, rx_gain=2.0,
-            signal_threshold=-137.0, clutter_height=0.0,
-            radius=10_000.0, colormap="plasma",
-            min_dbm=-137.0, max_dbm=-87.0,
+            lat=42.0,
+            lon=14.0,
+            tx_height=10.0,
+            tx_power=17.0,
+            tx_gain=2.0,
+            frequency_mhz=868.0,
+            rx_height=1.5,
+            rx_gain=2.0,
+            signal_threshold=-137.0,
+            clutter_height=0.0,
+            radius=10_000.0,
+            colormap="plasma",
+            min_dbm=-137.0,
+            max_dbm=-87.0,
         )
         base.update(overrides)
         return base
@@ -631,7 +690,9 @@ class TestCoveragePredictionRequest:
     def test_defaults_are_sane(self):
         """Default values should produce a valid request with required fields."""
         req = CoveragePredictionRequest(
-            lat=42.0, lon=14.0, tx_power=17.0,
+            lat=42.0,
+            lon=14.0,
+            tx_power=17.0,
             signal_threshold=-137.0,
         )
         assert req.colormap == "rainbow"

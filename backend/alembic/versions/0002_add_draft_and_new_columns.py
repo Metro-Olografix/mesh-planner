@@ -4,6 +4,7 @@ Revision ID: 0002
 Revises: 0001
 Create Date: 2026-04-08
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -24,10 +25,26 @@ def upgrade() -> None:
         "END $$"
     )
 
-    op.add_column("nodes", sa.Column("sim_radius_km", sa.Float(), nullable=False, server_default="10"))
-    op.add_column("nodes", sa.Column("environment", sa.String(), nullable=False, server_default="auto"))
-    op.add_column("nodes", sa.Column("lora_preset", sa.String(), nullable=False, server_default="MEDIUM_FAST"))
-    op.add_column("nodes", sa.Column("high_resolution", sa.Boolean(), nullable=False, server_default="true"))
+    op.add_column(
+        "nodes",
+        sa.Column("sim_radius_km", sa.Float(), nullable=False, server_default="10"),
+    )
+    op.add_column(
+        "nodes",
+        sa.Column("environment", sa.String(), nullable=False, server_default="auto"),
+    )
+    op.add_column(
+        "nodes",
+        sa.Column(
+            "lora_preset", sa.String(), nullable=False, server_default="MEDIUM_FAST"
+        ),
+    )
+    op.add_column(
+        "nodes",
+        sa.Column(
+            "high_resolution", sa.Boolean(), nullable=False, server_default="true"
+        ),
+    )
 
 
 def downgrade() -> None:
