@@ -16,6 +16,11 @@
       </div>
       <div class="navbar-right">
         <a
+          href="/try"
+          class="nav-btn nav-btn--text d-none d-sm-inline-flex"
+          :title="$t('try.page_title')"
+        >{{ $t('try.page_title') }}</a>
+        <a
           href="https://github.com/Metro-Olografix/mesh-planner"
           target="_blank"
           rel="noopener noreferrer"

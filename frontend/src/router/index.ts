@@ -17,6 +17,11 @@ const router = createRouter({
       name: 'callback',
       component: CallbackView,
     },
+    {
+      path: '/try',
+      name: 'try-coverage',
+      component: () => import('../views/TryCoverageView.vue'),
+    },
   ],
 })
 

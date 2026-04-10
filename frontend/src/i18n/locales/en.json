@@ -159,5 +159,88 @@
     "guest": "Guest (read-only)",
     "login_failed": "Login failed: {err}",
     "completing_login": "Completing login..."
+  },
+  "try": {
+    "page_title": "Test Your Coverage",
+    "page_subtitle": "See how far your LoRa node could reach — no sign-up required.",
+    "back_to_planner": "Back to planner",
+    "step_location": "Location",
+    "step_device": "Device",
+    "step_setup": "Setup",
+    "step_results": "Results",
+    "next": "Next",
+    "back": "Back",
+    "run": "Run simulation",
+    "try_again": "Try another location",
+    "share": "Share this result",
+    "copy_link": "Copy link",
+    "copied": "Copied!",
+    "share_tip": "Anyone opening this link will see the same simulation re-run with your settings.",
+    "join_cta": "Join the network",
+    "join_detail": "Like what you see? Add your node to the Metro Olografix mesh and help expand coverage for everyone.",
+    "location": {
+      "instruction": "Click anywhere on the map to place your node.",
+      "tip": "Higher locations with a clear view of the sky give much better range — rooftops and hilltops are ideal.",
+      "selected": "Selected location",
+      "none_selected": "No location selected yet"
+    },
+    "device": {
+      "instruction": "Choose the hardware you own or plan to buy.",
+      "tip": "More sensitive receivers can pick up weaker signals from farther away. If you're unsure, pick a recommended device.",
+      "recommended_hint": "Not sure? Start with one of our recommended devices:",
+      "recommended_badge": "Recommended",
+      "specs": "{tx} dBm TX · {sensitivity} dBm sensitivity · {freq} MHz",
+      "search_placeholder": "Filter devices..."
+    },
+    "setup": {
+      "height_label": "Antenna height",
+      "height_tip": "Each floor is roughly 3 meters. A rooftop installation dramatically increases range.",
+      "height_presets": {
+        "ground": "Ground level (1 m)",
+        "floor1": "1st floor (~3 m)",
+        "floor2": "2nd floor (~6 m)",
+        "floor3": "3rd floor / low rooftop (~9 m)",
+        "floor5": "5-story rooftop (~15 m)",
+        "tower": "Tower / mast (20 m+)"
+      },
+      "height_hint": "≈ {floors} floor(s) up",
+      "height_hint_ground": "Ground level",
+      "environment_label": "Surroundings",
+      "environment_tip": "Buildings and trees absorb and scatter radio waves. Open hilltops have the least obstruction.",
+      "environment_options": {
+        "auto": "Auto-detect from satellite data",
+        "urban": "City centre — dense buildings",
+        "suburban": "Residential area — mixed low-rise",
+        "rural": "Countryside — scattered structures",
+        "open": "Open field or hilltop"
+      },
+      "range_label": "Range vs. speed",
+      "range_tip": "Longer range means slower data transfer. 'Balanced' is recommended for most uses.",
+      "range_fast": "Fast",
+      "range_fast_detail": "Up to ~1 km, lower latency",
+      "range_balanced": "Balanced",
+      "range_balanced_detail": "Up to ~3 km, recommended",
+      "range_long": "Long range",
+      "range_long_detail": "Up to ~5 km+, slower"
+    },
+    "results": {
+      "computing": "Analysing terrain and computing RF propagation…",
+      "computing_detail": "This typically takes 10–15 seconds.",
+      "computing_step1": "Downloading terrain data…",
+      "computing_step2": "Running RF propagation model…",
+      "computing_step3": "Generating coverage map…",
+      "legend_title": "Signal strength",
+      "legend_strong": "Strong",
+      "legend_weak": "Weak",
+      "legend_detail": "Coloured areas show where your signal could be received. Gaps are caused by terrain obstructions.",
+      "radius_note": "Simulation radius: {radius} km"
+    },
+    "errors": {
+      "rate_limit": "You've reached the limit of {limit} simulations per hour. Please try again later.",
+      "busy": "The server is busy with other simulations. Please try again in a minute.",
+      "failed": "The simulation failed. Please try again.",
+      "no_location": "Please select a location on the map first.",
+      "no_device": "Please choose a device."
+    }
   }
 }

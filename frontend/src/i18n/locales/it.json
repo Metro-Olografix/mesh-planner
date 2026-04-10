@@ -159,5 +159,88 @@
     "guest": "Ospite (sola lettura)",
     "login_failed": "Accesso fallito: {err}",
     "completing_login": "Completamento accesso..."
+  },
+  "try": {
+    "page_title": "Testa la tua copertura",
+    "page_subtitle": "Scopri fin dove arriva il tuo nodo LoRa — senza registrazione.",
+    "back_to_planner": "Torna al planner",
+    "step_location": "Posizione",
+    "step_device": "Dispositivo",
+    "step_setup": "Configurazione",
+    "step_results": "Risultati",
+    "next": "Avanti",
+    "back": "Indietro",
+    "run": "Avvia simulazione",
+    "try_again": "Prova un'altra posizione",
+    "share": "Condividi questo risultato",
+    "copy_link": "Copia link",
+    "copied": "Copiato!",
+    "share_tip": "Chi apre questo link vedrà la stessa simulazione rieseguita con le tue impostazioni.",
+    "join_cta": "Unisciti alla rete",
+    "join_detail": "Ti piace quello che vedi? Aggiungi il tuo nodo alla rete mesh Metro Olografix e aiuta a espandere la copertura per tutti.",
+    "location": {
+      "instruction": "Clicca sulla mappa per posizionare il tuo nodo.",
+      "tip": "Le posizioni elevate con visuale libera sul cielo danno un raggio molto maggiore — i tetti e le colline sono ideali.",
+      "selected": "Posizione selezionata",
+      "none_selected": "Nessuna posizione selezionata"
+    },
+    "device": {
+      "instruction": "Scegli l'hardware che possiedi o che intendi acquistare.",
+      "tip": "I ricevitori più sensibili captano segnali più deboli da distanze maggiori. Se non sei sicuro, scegli un dispositivo consigliato.",
+      "recommended_hint": "Non sai quale scegliere? Parti da uno dei dispositivi consigliati:",
+      "recommended_badge": "Consigliato",
+      "specs": "{tx} dBm TX · {sensitivity} dBm sensibilità · {freq} MHz",
+      "search_placeholder": "Filtra dispositivi..."
+    },
+    "setup": {
+      "height_label": "Altezza antenna",
+      "height_tip": "Ogni piano è circa 3 metri. Un'installazione sul tetto aumenta enormemente il raggio.",
+      "height_presets": {
+        "ground": "Piano terra (1 m)",
+        "floor1": "1° piano (~3 m)",
+        "floor2": "2° piano (~6 m)",
+        "floor3": "3° piano / tetto basso (~9 m)",
+        "floor5": "Tetto 5 piani (~15 m)",
+        "tower": "Torre / palo (20 m+)"
+      },
+      "height_hint": "≈ {floors} piano/i",
+      "height_hint_ground": "Piano terra",
+      "environment_label": "Ambiente circostante",
+      "environment_tip": "Edifici e alberi assorbono e disperdono le onde radio. I rilievi aperti hanno meno ostacoli.",
+      "environment_options": {
+        "auto": "Rilevamento automatico da dati satellitari",
+        "urban": "Centro città — edifici densi",
+        "suburban": "Area residenziale — case basse miste",
+        "rural": "Campagna — strutture sparse",
+        "open": "Campo aperto o collina"
+      },
+      "range_label": "Portata vs. velocità",
+      "range_tip": "Maggiore portata significa trasferimento dati più lento. 'Bilanciato' è consigliato per la maggior parte degli usi.",
+      "range_fast": "Veloce",
+      "range_fast_detail": "Fino a ~1 km, bassa latenza",
+      "range_balanced": "Bilanciato",
+      "range_balanced_detail": "Fino a ~3 km, consigliato",
+      "range_long": "Lunga portata",
+      "range_long_detail": "Fino a ~5 km+, più lento"
+    },
+    "results": {
+      "computing": "Analisi del terreno e calcolo della propagazione RF…",
+      "computing_detail": "Di solito richiede 10–15 secondi.",
+      "computing_step1": "Download dei dati di terreno…",
+      "computing_step2": "Esecuzione del modello di propagazione RF…",
+      "computing_step3": "Generazione della mappa di copertura…",
+      "legend_title": "Forza del segnale",
+      "legend_strong": "Forte",
+      "legend_weak": "Debole",
+      "legend_detail": "Le aree colorate mostrano dove potrebbe arrivare il tuo segnale. I vuoti sono causati da ostacoli del terreno.",
+      "radius_note": "Raggio simulazione: {radius} km"
+    },
+    "errors": {
+      "rate_limit": "Hai raggiunto il limite di {limit} simulazioni all'ora. Riprova più tardi.",
+      "busy": "Il server è occupato con altre simulazioni. Riprova tra un minuto.",
+      "failed": "La simulazione è fallita. Riprova.",
+      "no_location": "Seleziona prima una posizione sulla mappa.",
+      "no_device": "Scegli un dispositivo."
+    }
   }
 }

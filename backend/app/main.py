@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from app.config import settings
 from app.database import AsyncSessionLocal, engine
 from app.services.hardware_seed import seed_hardware
-from app.api import coverage, events, hardware, nodes, pathfinder
+from app.api import coverage, events, hardware, nodes, pathfinder, try_coverage
 import app.models  # noqa: F401 — registers models with Base.metadata
 
 logging.basicConfig(
@@ -62,6 +62,7 @@ app.include_router(hardware.router)
 app.include_router(coverage.router)
 app.include_router(pathfinder.router)
 app.include_router(events.router)
+app.include_router(try_coverage.router)
 
 
 def _find_custom_asset(name: str) -> Path | None:
