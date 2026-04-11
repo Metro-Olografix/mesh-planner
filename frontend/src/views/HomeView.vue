@@ -15,16 +15,17 @@
         </span>
       </div>
       <div class="navbar-right">
+        <!-- Group 1: tertiary links — desktop only -->
         <a
           href="/try"
-          class="nav-btn nav-btn--text d-none d-sm-inline-flex"
+          class="nav-btn nav-btn--text d-none d-md-inline-flex"
           :title="$t('try.page_title')"
         >{{ $t('try.page_title') }}</a>
         <a
           href="https://github.com/Metro-Olografix/mesh-planner"
           target="_blank"
           rel="noopener noreferrer"
-          class="nav-btn d-none d-sm-inline-flex"
+          class="nav-btn d-none d-md-inline-flex"
           :title="$t('nav.source_code')"
           :aria-label="$t('nav.source_code')"
         >
@@ -32,6 +33,9 @@
             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8"/>
           </svg>
         </a>
+        <span class="nav-divider d-none d-md-block"></span>
+
+        <!-- Group 2: utility controls -->
         <button
           class="nav-btn"
           :class="uiStore.privacyMode ? 'nav-btn--active' : ''"
@@ -46,15 +50,47 @@
             <path d="M11 1a2 2 0 0 0-2 2v4a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h5V3a3 3 0 0 1 6 0v4a.5.5 0 0 1-1 0V3a2 2 0 0 0-2-2"/>
           </svg>
         </button>
-        <span class="nav-username d-none d-sm-inline">{{ displayName }}</span>
-        
-        <!-- Language Switcher -->
-        <button class="nav-btn nav-btn--text" @click="toggleLanguage()">
+        <!-- Language switcher: always visible on desktop, in overflow on mobile -->
+        <button class="nav-btn nav-btn--text d-none d-md-inline-flex" @click="toggleLanguage()" :title="$t('nav.language')">
           {{ locale.toUpperCase() }}
         </button>
+        <span class="nav-divider d-none d-md-block"></span>
 
+        <!-- Group 3: user identity + primary action -->
+        <span class="nav-username d-none d-md-inline">{{ displayName }}</span>
         <button v-if="authStore.isAuthenticated" class="nav-btn nav-btn--text" @click="authStore.logout()">{{ $t('nav.logout') }}</button>
         <button v-else class="nav-btn nav-btn--text nav-btn--primary" @click="handleLogin()">{{ $t('nav.login') }}</button>
+
+        <!-- Mobile: overflow menu trigger -->
+        <button
+          class="nav-btn d-md-none"
+          @click.stop="mobileMenuOpen = !mobileMenuOpen"
+          :aria-expanded="String(mobileMenuOpen)"
+          :aria-label="$t('nav.more')"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Mobile overflow: backdrop + dropdown -->
+      <div v-if="mobileMenuOpen" class="nav-overflow-backdrop d-md-none" @click="mobileMenuOpen = false"></div>
+      <div v-if="mobileMenuOpen" class="nav-overflow-menu d-md-none" @click.stop>
+        <div v-if="authStore.isAuthenticated" class="nav-overflow-user">{{ displayName }}</div>
+        <div v-if="authStore.isAuthenticated" class="nav-overflow-sep"></div>
+        <button class="nav-overflow-item" @click="toggleLanguage(); mobileMenuOpen = false">
+          {{ locale === 'en' ? '🇮🇹 Italiano' : '🇬🇧 English' }}
+        </button>
+        <div class="nav-overflow-sep"></div>
+        <a href="/try" class="nav-overflow-item" @click="mobileMenuOpen = false">{{ $t('try.page_title') }}</a>
+        <a
+          href="https://github.com/Metro-Olografix/mesh-planner"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="nav-overflow-item"
+          @click="mobileMenuOpen = false"
+        >GitHub</a>
       </div>
     </nav>
 
@@ -166,6 +202,7 @@ function toggleLanguage() {
   setLanguage(next)
 }
 
+const mobileMenuOpen = ref(false)
 const activeTab = ref<'nodes' | 'path' | 'activity' | 'jobs'>('nodes')
 const tabs = computed(() => {
   const all = [
@@ -431,6 +468,64 @@ function onMapClick(lat: number, lon: number) {
 .nav-btn--primary:hover:not(:disabled) {
   background: rgba(255,255,255,.15);
   border-color: #fff;
+}
+
+/* ── Navbar divider ──────────────────────────────────────────────────────── */
+.nav-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255,255,255,.15);
+  flex-shrink: 0;
+}
+
+/* ── Mobile overflow menu ────────────────────────────────────────────────── */
+.nav-overflow-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1099;
+}
+.nav-overflow-menu {
+  position: fixed;
+  top: 48px;
+  right: 8px;
+  z-index: 1100;
+  background: #2b2f33;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px;
+  padding: 4px 0;
+  min-width: 200px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+}
+.nav-overflow-user {
+  padding: 10px 16px 8px;
+  font-size: .8rem;
+  font-weight: 600;
+  color: rgba(255,255,255,.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav-overflow-sep {
+  height: 1px;
+  background: rgba(255,255,255,.1);
+  margin: 4px 0;
+}
+.nav-overflow-item {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,.75);
+  font-size: .85rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.nav-overflow-item:hover {
+  background: rgba(255,255,255,.08);
+  color: #fff;
 }
 
 /* ── Sidebar overlay ─────────────────────────────────────────────────────── */
