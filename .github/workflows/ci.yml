@@ -92,8 +92,8 @@ jobs:
           file: backend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/mesh-planner-backend:latest
-            ghcr.io/${{ github.repository_owner }}/mesh-planner-backend:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner | toLower }}/mesh-planner-backend:latest
+            ghcr.io/${{ github.repository_owner | toLower }}/mesh-planner-backend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Build and push frontend
@@ -103,7 +103,7 @@ jobs:
           file: frontend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/mesh-planner-frontend:latest
-            ghcr.io/${{ github.repository_owner }}/mesh-planner-frontend:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner | toLower }}/mesh-planner-frontend:latest
+            ghcr.io/${{ github.repository_owner | toLower }}/mesh-planner-frontend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
