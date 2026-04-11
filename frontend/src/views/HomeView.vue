@@ -65,7 +65,7 @@
         <button
           class="nav-btn d-md-none"
           @click.stop="mobileMenuOpen = !mobileMenuOpen"
-          :aria-expanded="String(mobileMenuOpen)"
+          :aria-expanded="mobileMenuOpen"
           :aria-label="$t('nav.more')"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
