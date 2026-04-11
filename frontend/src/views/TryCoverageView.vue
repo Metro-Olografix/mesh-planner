@@ -232,7 +232,20 @@ async function onCoverageReady(buf: ArrayBuffer) {
       [pickedLat.value! - latDelta, pickedLon.value! - lngDelta],
       [pickedLat.value! + latDelta, pickedLon.value! + lngDelta],
     )
-    map.flyToBounds(bounds, { padding: [20, 20], duration: 1.2 })
+    // Offset padding to account for the wizard panel overlay so that
+    // flyToBounds targets only the visible map area:
+    //   mobile  → bottom sheet covers ~55 vh → add bottom padding
+    //   desktop → left sidebar 360 px + 12 px margin → add left padding
+    const isMobile = window.innerWidth < 768
+    const pad = 8
+    const panelOffset = isMobile
+      ? Math.round(window.innerHeight * 0.55)
+      : 372 // 360 px panel + 12 px margin
+    map.flyToBounds(bounds, {
+      paddingTopLeft: [isMobile ? pad : panelOffset, pad],
+      paddingBottomRight: [pad, isMobile ? panelOffset : pad],
+      duration: 1.2,
+    })
   } catch {
     // parse failure — coverage just won't appear, not fatal
   } finally {
