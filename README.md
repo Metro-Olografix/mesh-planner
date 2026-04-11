@@ -1,6 +1,6 @@
 # Metro Olografix — Mesh Planner
 
-A professional, collaborative **Meshtastic node deployment planner** for the Metro Olografix association. This tool combines high-fidelity RF propagation modeling with real-time collaboration to build the ultimate resilient communication mesh in Abruzzo, Italy.
+A professional, collaborative **Meshtastic node deployment planner** for the Metro Olografix association. Combines high-fidelity RF propagation modeling with real-time collaboration to build a resilient communication mesh in Abruzzo, Italy.
 
 ![Main Map View with Coverage Overlays](docs/coverage-example.png)
 
@@ -12,88 +12,128 @@ A professional, collaborative **Meshtastic node deployment planner** for the Met
 | **📡 Node Management** | Add, edit, and delete nodes with granular control over RF parameters, height, and equipment. |
 | **📈 Deployment Workflow** | Lifecycle management for nodes: `Draft` (private), `Planned`, and `Deployed`. |
 | **🌍 RF Propagation** | Per-node **SPLAT!** simulations (ITM model) rendered as GeoTIFF overlays. |
-| **🏙️ Auto-Clutter** | Industry-standard **ESA WorldCover 2021** (10m) land-cover data for automatic obstacle height estimation. |
-| **🛣️ Max-SNR Pathfinder** | Intelligent A→B routing that maximizes the bottleneck SNR across the best possible relay hops. |
-| **🔄 Collaboration** | Live **Activity Feed** and instant **SSE** synchronization for all connected members. |
+| **🏙️ Auto-Clutter** | **ESA WorldCover 2021** (10 m) land-cover data for automatic obstacle height estimation. |
+| **🛣️ Max-SNR Pathfinder** | A→B routing that maximises the bottleneck SNR across the best possible relay hops. |
+| **🔄 Collaboration** | Live **Activity Feed** and instant **SSE** synchronisation for all connected members. |
 | **🛡️ Auth & Privacy** | OIDC/OAuth2 with PKCE (any provider). Optional public read-only view with coordinate fuzzing. |
-| **⚙️ Job Queue** | Asynchronous rendering system with progress tracking and one-click global recomputes. |
+| **⚙️ Job Queue** | Asynchronous rendering with progress tracking and one-click global recompute. |
 
 ---
 
-## 🛠️ How It Works
+## 🛠️ Local Development
 
-### Deployment Lifecycle & Privacy
-Nodes follow a three-stage lifecycle to reflect real-world deployments:
-1. **Draft**: Private to the creator. Use this to experiment with locations without cluttering the map for other association members.
-2. **Planned**: Shared with all members. Used for proposing new node sites and coordinating hardware.
-3. **Deployed**: Marked as live (green). These nodes are used by the **Path Planner** as potential mesh relays.
+**Requirements:** Docker, Docker Compose v2, an OIDC-compliant identity provider.
 
-### RF Propagation Model (SPLAT! + ITM)
-The Mesh Planner uses the **Irregular Terrain Model (ITM / Longley-Rice)**. It models path loss over irregular terrain, accounting for diffraction, ground reflections, and atmospheric bending.
-- **Model**: `olditm` (Standard ITM, preferred for Meshtastic frequencies).
-- **Climate**: Configurable (e.g., *Continental Temperate* by default).
-- **Auto-Invalidation**: If any RF-relevant field (lat, lon, hardware, antenna height, etc.) is changed, the coverage cache is automatically marked as **stale** and requires a re-run.
-
-### Intelligent Clutter Modeling
-1. When a node's environment is set to `auto`, the backend queries **ESA WorldCover 2021** Cloud-Optimized GeoTIFFs on S3.
-2. It samples the 10m land-cover class (e.g., "Built-up", "Tree cover") and applies realistic ground clutter offsets.
-
-### Path Planning Algorithm
-Finds the path where the **worst-case SNR** among all hops is as high as possible:
-- **Bidirectional Validation**: For every hop A→B, the pathfinder checks if B can *also* reach A.
-- **Dijkstra Optimization**: Maximizes the bottleneck link quality.
-- **Friis Penalty**: Free-space hops (no SPLAT data) receive a **15 dB penalty** to ensure the planner prefers terrain-verified paths.
-
----
-
-## 🏗️ Architecture
-
-```mermaid
-graph TD
-    UI[Vue 3 · Pinia · Leaflet] <-->|REST + SSE| API[FastAPI Backend]
-    API <-->|SQL| DB[(PostgreSQL)]
-    API -->|Spawn| SPLAT[SPLAT! Binary]
-    SPLAT <-->|Local Cache| SDF[.SDF Terrain Tiles]
-    SDF <-->|Fetch| AWS[AWS Open Data S3]
-    API -->|Fetch| ESA[ESA WorldCover S3]
-```
-
-![Node Configuration and Path Planning](docs/path-planner-example.png)
-
----
-
-## ⚡ Quick Start
-
-### 1. Requirements
-- **Docker** & **Docker Compose v2**
-- An **OIDC-compliant identity provider** (Zitadel, Keycloak, Auth0, Okta, etc.)
-
-### 2. Configuration
-1. Clone the repository and copy the env file:
-   ```bash
-   cp .env.example .env
-   ```
-2. Edit `.env` and fill in the required values (see [Configuration Reference](#configuration-reference) below).
-
-### 3. Launch
-
-**Production** (built frontend served by nginx):
 ```bash
-docker compose --profile prod up -d
+cp .env.example .env
+# Fill in OIDC_ISSUER, OIDC_CLIENT_ID, POSTGRES_PASSWORD
+docker compose up
 ```
-- Frontend: `http://localhost:8080`
+
+- Frontend (Vite + HMR): `http://localhost:5173`
 - Backend API: `http://localhost:8000`
 
-**Development** (Vite dev server with HMR):
-```bash
-docker compose --profile dev up
-```
-- Frontend dev server with hot reload: `http://localhost:5173`
-- Backend API: `http://localhost:8000`
+The compose file builds the backend from source and runs the frontend with the Vite dev server. It is **not intended for production** — use the Helm chart below.
 
 ---
 
-## 🔐 Authentication
+## ☸️ Production Deployment (Kubernetes / Helm)
+
+Pre-built images are published to GHCR on every push to `main`:
+- `ghcr.io/metro-olografix/mesh-planner-backend:latest`
+- `ghcr.io/metro-olografix/mesh-planner-frontend:latest`
+
+The Helm chart in `hack/helm/mesh-planner/` deploys the backend, frontend, PostgreSQL, and an nginx Ingress in a single namespace.
+
+**Requirements:** Kubernetes 1.24+, Helm 3.10+, nginx Ingress controller, cert-manager (optional, for TLS).
+
+### 1. Create a values override file
+
+```yaml
+# my-values.yaml
+postgresql:
+  auth:
+    password: "your-strong-password"    # required
+
+zitadel:
+  domain: https://auth.example.com      # required — OIDC issuer base URL
+  clientId: "your-oidc-client-id"       # required
+
+ingress:
+  host: mesh.example.com                # required — public hostname
+  tls:
+    enabled: true
+    certManager:
+      enabled: true
+      clusterIssuer: letsencrypt-prod
+```
+
+The images default to `ghcr.io/metro-olografix/mesh-planner-*:latest` — no override needed unless self-hosting images.
+
+### 2. Install
+
+```bash
+helm install mesh-planner hack/helm/mesh-planner \
+  --namespace mesh-planner --create-namespace \
+  --values my-values.yaml
+```
+
+### 3. Upgrade
+
+```bash
+helm upgrade mesh-planner hack/helm/mesh-planner \
+  --namespace mesh-planner \
+  --values my-values.yaml
+```
+
+### Key chart values
+
+| Value | Default | Description |
+|---|---|---|
+| `backend.storage.splatTiles.size` | `10Gi` | Terrain tile cache PVC size |
+| `backend.storage.customAssets.enabled` | `false` | Enable PVC for custom logo/favicon |
+| `ingress.className` | `nginx` | Ingress class name |
+| `publicAccess.enabled` | `false` | Unauthenticated read-only mode |
+| `logLevel` | `INFO` | Backend log verbosity |
+
+> The Ingress is pre-configured with `proxy-buffering: off` and extended timeouts — both required for the SSE stream on `/api/events`.
+
+<details>
+<summary>Using a private registry or pinned image tag</summary>
+
+```yaml
+# my-values.yaml (additional fields)
+imagePullSecrets:
+  - name: regcred
+
+backend:
+  image:
+    registry: your-registry.example.com
+    repository: your-org/mesh-planner-backend
+    tag: "abc1234"
+
+frontend:
+  image:
+    registry: your-registry.example.com
+    repository: your-org/mesh-planner-frontend
+    tag: "abc1234"
+```
+
+Create the pull secret beforehand:
+```bash
+kubectl create secret docker-registry regcred \
+  --namespace mesh-planner \
+  --docker-server=your-registry.example.com \
+  --docker-username=<user> \
+  --docker-password=<token>
+```
+
+</details>
+
+---
+
+<details>
+<summary>🔐 Authentication</summary>
 
 Authentication uses the **OpenID Connect (OIDC) Authorization Code + PKCE** flow and works with any standards-compliant identity provider.
 
@@ -112,48 +152,14 @@ Zitadel places a project resource ID in the JWT `aud` claim rather than the OAut
 
 For all other providers (Auth0, Okta, Keycloak), set `OIDC_AUDIENCE` to your API audience or client ID as required by the provider.
 
----
-
-## 🧪 Coverage Tester (`/try`)
-
-The `/try` page lets anyone — no account required — simulate their LoRa node coverage in a guided 4-step wizard. It is designed for people with no prior LoRa knowledge.
-
-| Step | What happens |
-|---|---|
-| **1. Location** | Click the map to drop a pin anywhere in the world. |
-| **2. Device** | Pick from the full hardware catalogue. Recommended devices (Heltec V3, RAK4631) are highlighted. |
-| **3. Setup** | Set antenna height (with floor-based hints — each floor ≈ 3 m), surrounding environment, and a simplified Fast / Balanced / Long Range preset. |
-| **4. Results** | A SPLAT! simulation runs server-side (~10–15 s) and the coverage overlay is displayed with a smooth zoom animation. |
-
-Results include a **shareable link** that encodes all settings as URL query parameters — opening the link re-runs the simulation automatically. A locale-aware **Join the network** CTA links to the Metro Olografix membership page.
-
-### `/try` endpoint details
-
-`POST /api/try/simulate` — fully public, no authentication needed.
-
-| Constraint | Value |
-|---|---|
-| Max simulation radius | `TRY_MAX_RADIUS_KM` (default 3 km) |
-| Resolution | Standard only (90 m / 3-arcsecond terrain tiles) |
-| Persistence | None — GeoTIFF is returned directly, never stored in the database |
-| Rate limit | `TRY_RATE_LIMIT_PER_HOUR` requests per IP per hour (default 6) |
-| Concurrency | `TRY_MAX_CONCURRENT` simultaneous SPLAT! processes (default 2) |
-
-Three additional environment variables control the endpoint:
-
-| Variable | Default | Description |
-|---|---|---|
-| `TRY_RATE_LIMIT_PER_HOUR` | `6` | Max simulations per IP per hour |
-| `TRY_MAX_RADIUS_KM` | `3.0` | Coverage radius cap in km |
-| `TRY_MAX_CONCURRENT` | `2` | Max simultaneous SPLAT! processes |
-
-> **Note:** Rate limiting is in-process and does not coordinate across multiple workers or replicas. For multi-instance deployments, replace the in-memory counter with a shared Redis store.
+</details>
 
 ---
 
-## 🌐 Public Read-Only Mode
+<details>
+<summary>🌐 Public Read-Only Mode</summary>
 
-When `PUBLIC_ACCESS=true`, unauthenticated visitors can view the map without logging in:
+When `PUBLIC_ACCESS=true`, unauthenticated visitors can view the map without logging in.
 
 | What they see | What is hidden |
 |---|---|
@@ -164,28 +170,76 @@ When `PUBLIC_ACCESS=true`, unauthenticated visitors can view the map without log
 | — | Jobs tab |
 | — | Path planner |
 
-Coordinates are fuzzed **server-side** using a deterministic algorithm (djb2 hash of the node ID), so the real position is never transmitted to unauthenticated clients. The same algorithm is used client-side for the authenticated privacy-mode toggle, so markers appear at the same fuzzed position in both cases.
+Coordinates are fuzzed **server-side** using a deterministic algorithm (djb2 hash of the node ID), so the real position is never transmitted to unauthenticated clients. The same algorithm is used client-side for the authenticated privacy-mode toggle.
 
-Authenticated users retain full access regardless of this setting.
+</details>
 
 ---
 
-## 🎨 Custom Branding
+<details>
+<summary>🧪 Coverage Tester (/try)</summary>
 
-Drop files into the `custom/` directory at the project root to override the default logo and favicon. No rebuild is required — the backend detects them at startup and serves them at runtime.
+The `/try` page lets anyone — no account required — simulate LoRa node coverage in a guided 4-step wizard.
+
+| Step | What happens |
+|---|---|
+| **1. Location** | Click the map to drop a pin anywhere in the world. |
+| **2. Device** | Pick from the full hardware catalogue. Recommended devices are highlighted. |
+| **3. Setup** | Set antenna height, surrounding environment, and a Fast / Balanced / Long Range preset. |
+| **4. Results** | A SPLAT! simulation runs server-side (~10–15 s) and the coverage overlay is displayed. |
+
+Results include a **shareable link** that encodes all settings as URL query parameters — opening it re-runs the simulation automatically.
+
+### Endpoint details
+
+`POST /api/try/simulate` — fully public, no authentication.
+
+| Constraint | Default | Env variable |
+|---|---|---|
+| Max radius | 3 km | `TRY_MAX_RADIUS_KM` |
+| Resolution | Standard (90 m / 3-arcsecond) | — |
+| Persistence | None — GeoTIFF returned directly | — |
+| Rate limit | 6 / IP / hour | `TRY_RATE_LIMIT_PER_HOUR` |
+| Concurrency | 2 simultaneous SPLAT! processes | `TRY_MAX_CONCURRENT` |
+
+> Rate limiting is in-process. For multi-instance deployments, replace the in-memory counter with a shared Redis store.
+
+</details>
+
+---
+
+<details>
+<summary>🎨 Custom Branding</summary>
+
+Drop files into the `custom/` directory at the project root to override the default logo and favicon. No rebuild required.
 
 | File | Description |
 |---|---|
 | `custom/logo.png` (or `.svg`, `.webp`, `.jpg`) | Replaces the 📡 emoji in the navbar |
 | `custom/favicon.ico` (or `.png`, `.svg`) | Replaces the browser tab icon |
 
-The `custom/` directory is bind-mounted read-only into the backend container. To update assets, replace the files and restart the backend.
+**Docker Compose:** the `custom/` directory is bind-mounted read-only into the backend container. Replace the files and restart the backend to apply changes.
+
+**Kubernetes:** enable the custom assets PVC in your values file, then copy assets into the pod:
+```yaml
+backend:
+  storage:
+    customAssets:
+      enabled: true
+      size: 50Mi
+```
+```bash
+kubectl cp custom/ mesh-planner/<backend-pod>:/app/custom/
+```
+
+</details>
 
 ---
 
-## ⚙️ Configuration Reference
+<details>
+<summary>⚙️ Configuration Reference</summary>
 
-All settings are read from `.env` (copied from `.env.example`).
+All settings are read from `.env` (Docker Compose) or environment variables injected by Helm.
 
 | Variable | Required | Description |
 |---|---|---|
@@ -194,7 +248,7 @@ All settings are read from `.env` (copied from `.env.example`).
 | `OIDC_CLIENT_ID` | ✅ | OAuth client ID of the SPA application |
 | `OIDC_AUDIENCE` | — | Enforce `aud` claim verification (leave empty for Zitadel) |
 | `PUBLIC_ACCESS` | — | `true` to allow unauthenticated read-only access (default: `false`) |
-| `CORS_ORIGINS` | — | Comma-separated allowed origins, e.g. `https://mesh.example.com` (default: `http://localhost:5173`) |
+| `CORS_ORIGINS` | — | Comma-separated allowed origins (default: `http://localhost:5173`) |
 | `LOG_LEVEL` | — | `DEBUG` / `INFO` / `WARNING` / `ERROR` (default: `INFO`) |
 | `SPLAT_PATH` | — | Path to SPLAT! binaries (default: `/app`) |
 | `TILE_CACHE_DIR` | — | Terrain tile cache directory (default: `/app/.splat_tiles`) |
@@ -203,32 +257,81 @@ All settings are read from `.env` (copied from `.env.example`).
 | `TRY_MAX_RADIUS_KM` | — | Coverage radius cap for `/try` simulations in km (default: `3.0`) |
 | `TRY_MAX_CONCURRENT` | — | Max simultaneous SPLAT! processes on `/try` (default: `2`) |
 
+</details>
+
 ---
 
-## 🗃️ Database Migrations
+<details>
+<summary>🏗️ Architecture & How It Works</summary>
+
+```mermaid
+graph TD
+    UI[Vue 3 · Pinia · Leaflet] <-->|REST + SSE| API[FastAPI Backend]
+    API <-->|SQL| DB[(PostgreSQL)]
+    API -->|Spawn| SPLAT[SPLAT! Binary]
+    SPLAT <-->|Local Cache| SDF[.SDF Terrain Tiles]
+    SDF <-->|Fetch| AWS[AWS Open Data S3]
+    API -->|Fetch| ESA[ESA WorldCover S3]
+```
+
+![Node Configuration and Path Planning](docs/path-planner-example.png)
+
+### Deployment Lifecycle & Privacy
+1. **Draft**: Private to the creator. Experiment with locations without cluttering the map.
+2. **Planned**: Shared with all members. Used for proposing new node sites and coordinating hardware.
+3. **Deployed**: Marked as live. These nodes are used by the Path Planner as potential mesh relays.
+
+### RF Propagation Model (SPLAT! + ITM)
+Uses the **Irregular Terrain Model (ITM / Longley-Rice)** — path loss over irregular terrain, accounting for diffraction, ground reflections, and atmospheric bending.
+- **Model**: `olditm` (Standard ITM, preferred for Meshtastic frequencies).
+- **Auto-Invalidation**: If any RF-relevant field (lat, lon, hardware, antenna height, etc.) changes, the coverage cache is automatically marked stale and requires a re-run.
+
+### Intelligent Clutter Modeling
+When a node's environment is set to `auto`, the backend queries **ESA WorldCover 2021** Cloud-Optimized GeoTIFFs on S3, sampling the 10 m land-cover class and applying realistic ground clutter offsets.
+
+### Path Planning Algorithm
+Finds the path where the **worst-case SNR** among all hops is as high as possible:
+- **Bidirectional Validation**: For every hop A→B, checks that B can also reach A.
+- **Dijkstra Optimization**: Maximises the bottleneck link quality.
+- **Friis Penalty**: Free-space hops (no SPLAT data) receive a **15 dB penalty** to prefer terrain-verified paths.
+
+</details>
+
+---
+
+<details>
+<summary>🗃️ Database Migrations</summary>
 
 Schema changes are managed with **Alembic**. Migrations run automatically on startup (`alembic upgrade head`).
 
-To create a new migration after modifying SQLAlchemy models:
+**Create a new migration** after modifying SQLAlchemy models:
 ```bash
 docker compose exec backend alembic revision --autogenerate -m "description"
 ```
 
-To manually apply or inspect migrations:
+**Inspect migrations:**
 ```bash
-docker compose exec backend alembic upgrade head     # apply all pending
-docker compose exec backend alembic current          # show current revision
-docker compose exec backend alembic history          # list all revisions
+docker compose exec backend alembic upgrade head   # apply all pending
+docker compose exec backend alembic current        # show current revision
+docker compose exec backend alembic history        # list all revisions
 ```
 
-**Existing deployments** upgrading from the pre-Alembic version should stamp the database first:
+**Existing deployments** upgrading from a pre-Alembic version should stamp the database first:
 ```bash
 docker compose exec backend alembic stamp head
 ```
 
+On Kubernetes:
+```bash
+kubectl exec -n mesh-planner deploy/mesh-planner-backend -- alembic upgrade head
+```
+
+</details>
+
 ---
 
-## 🔄 CI/CD
+<details>
+<summary>🔄 CI/CD</summary>
 
 A GitHub Actions pipeline (`.github/workflows/ci.yml`) runs on every push and pull request to `main`:
 
@@ -237,11 +340,18 @@ A GitHub Actions pipeline (`.github/workflows/ci.yml`) runs on every push and pu
 | **lint** | push + PR | `ruff check` and `ruff format --check` on `backend/` |
 | **test** | push + PR | `pytest` against a PostgreSQL service container |
 | **docker-build** | PR only | Validates both Dockerfiles build successfully |
-| **docker-publish** | push to `main` | Builds and pushes images to `ghcr.io` (`mesh-planner-backend`, `mesh-planner-frontend`) |
+| **docker-publish** | push to `main` | Builds and pushes images to GHCR |
+
+Published images:
+- `ghcr.io/metro-olografix/mesh-planner-backend:<sha>` / `:latest`
+- `ghcr.io/metro-olografix/mesh-planner-frontend:<sha>` / `:latest`
+
+</details>
 
 ---
 
-## 📻 LoRa Presets & Sensitivity
+<details>
+<summary>📻 LoRa Presets & Hardware</summary>
 
 The planner calculates the thermal noise floor as: `−174 dBm + 10·log₁₀(BW_Hz) + NF_dB`.
 
@@ -255,7 +365,6 @@ The planner calculates the thermal noise floor as: `−174 dBm + 10·log₁₀(B
 | LONG_SLOW | 12 | 125 | −124 | -20.0 |
 | VERY_LONG_SLOW | 12 | 125 | −124 | -20.0 |
 
----
+The hardware database contains optimised parameters for over **28 devices**, including **LilyGo** (T-Beam, T-Echo, T-Deck), **Heltec**, **RAKwireless**, and **Seeed Studio**. Custom antenna gains can be set per-node to override hardware defaults.
 
-## 📜 Hardware Database
-The database contains optimized parameters for over **28 devices**, including **LilyGo** (T-Beam, T-Echo, T-Deck), **Heltec**, **RAKwireless**, and **Seeed Studio**. Custom antenna gains can be set per-node to override hardware defaults.
+</details>

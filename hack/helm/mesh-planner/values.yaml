@@ -11,7 +11,7 @@ publicAccess:
 backend:
   image:
     registry: ghcr.io
-    repository: your-org/mesh-planner-backend
+    repository: metro-olografix/mesh-planner-backend
     tag: latest
     pullPolicy: IfNotPresent
   replicaCount: 1
@@ -32,7 +32,7 @@ frontend:
   enabled: true
   image:
     registry: ghcr.io
-    repository: your-org/mesh-planner-frontend
+    repository: metro-olografix/mesh-planner-frontend
     tag: latest
     pullPolicy: IfNotPresent
   replicaCount: 1
