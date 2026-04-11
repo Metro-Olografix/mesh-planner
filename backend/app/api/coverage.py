@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 
-from app.auth import get_current_user, get_optional_user
+from app.auth import get_current_user
 from app.config import settings
 from app.database import get_db, AsyncSessionLocal
 from app.models.coverage_cache import CoverageCache
