@@ -224,10 +224,15 @@ async function onCoverageReady(buf: ArrayBuffer) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rasterLayer = new GeoRasterLayer({ georaster: gr, opacity: 0.7, noDataValue: 255, resolution: 256 } as any)
     rasterLayer.addTo(map)
-    // Use georaster metadata bounds directly — more reliable than rasterLayer.getBounds()
-    // before the layer has fully rendered. flyToBounds gives a smooth animated zoom.
-    const bounds = L.latLngBounds([gr.ymin, gr.xmin], [gr.ymax, gr.xmax])
-    map.flyToBounds(bounds, { padding: [40, 40], duration: 1.2 })
+    // Derive zoom target from the simulation point + radius rather than the
+    // GeoTIFF extent, which can span full terrain tiles and cause a zoom-out.
+    const latDelta = MAX_RADIUS_KM / 111
+    const lngDelta = MAX_RADIUS_KM / (111 * Math.cos((pickedLat.value ?? 0) * Math.PI / 180))
+    const bounds = L.latLngBounds(
+      [pickedLat.value! - latDelta, pickedLon.value! - lngDelta],
+      [pickedLat.value! + latDelta, pickedLon.value! + lngDelta],
+    )
+    map.flyToBounds(bounds, { padding: [20, 20], duration: 1.2 })
   } catch {
     // parse failure — coverage just won't appear, not fatal
   } finally {
