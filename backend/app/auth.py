@@ -9,9 +9,11 @@ import logging
 from typing import Any
 
 import httpx
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+from jwt import PyJWKSet
+from jwt.exceptions import InvalidTokenError
 
 from app.config import settings
 
@@ -143,8 +145,30 @@ async def validate_token(token: str) -> dict[str, Any]:
     Raises HTTP 401 on any validation failure.
     """
     try:
-        jwks = await _get_jwks()
-        decode_options: dict[str, Any] = {"verify_at_hash": False}
+        jwks_dict = await _get_jwks()
+        jwks_set = PyJWKSet.from_dict(jwks_dict)
+
+        # Select the signing key via the kid header (standard in OIDC RS256 tokens)
+        unverified_header = jwt.get_unverified_header(token)
+        kid = unverified_header.get("kid")
+        if kid:
+            try:
+                signing_key = jwks_set[kid].key
+            except KeyError:
+                logger.warning("JWT kid=%s not found in JWKS", kid)
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid or expired token",
+                )
+        elif jwks_set.keys:
+            signing_key = jwks_set.keys[0].key
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token",
+            )
+
+        decode_options: dict[str, Any] = {}
         decode_kwargs: dict[str, Any] = {
             "algorithms": ["RS256"],
             "issuer": settings.oidc_issuer,
@@ -155,14 +179,15 @@ async def validate_token(token: str) -> dict[str, Any]:
             # Some providers (e.g. Zitadel) put a project resource ID in aud
             # rather than the OAuth client ID — skip verification in that case.
             decode_options["verify_aud"] = False
-        decode_kwargs["options"] = decode_options
+        if decode_options:
+            decode_kwargs["options"] = decode_options
 
-        payload = jwt.decode(token, jwks, **decode_kwargs)
+        payload = jwt.decode(token, signing_key, **decode_kwargs)
         # Stash the raw token so callers can use it for UserInfo lookups
         payload["_access_token"] = token
         logger.debug("JWT validated for sub=%s", payload.get("sub", "?"))
         return payload
-    except JWTError as exc:
+    except InvalidTokenError as exc:
         logger.warning("JWT validation failed (%s): %s", type(exc).__name__, exc)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
