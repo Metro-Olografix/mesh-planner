@@ -134,6 +134,8 @@ async def get_node(
         if node.status == "draft":
             raise HTTPException(status_code=404, detail="Node not found")
         return _serialize_public(node)
+    if node.status == "draft" and node.created_by != user["sub"]:
+        raise HTTPException(status_code=404, detail="Node not found")
     return _serialize(node)
 
 
