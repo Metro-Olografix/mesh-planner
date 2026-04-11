@@ -159,7 +159,9 @@ When `PUBLIC_ACCESS=true`, unauthenticated visitors can view the map without log
 |---|---|
 | Node names, statuses, hardware type | Exact coordinates (fuzzed ±500 m) |
 | Live SSE updates | Notes, creator identity |
-| Activity feed (anonymised) | Coverage GeoTIFF overlays |
+| Activity feed (node names and authors anonymised) | Coverage GeoTIFF overlays |
+| — | Coverage job status |
+| — | Jobs tab |
 | — | Path planner |
 
 Coordinates are fuzzed **server-side** using a deterministic algorithm (djb2 hash of the node ID), so the real position is never transmitted to unauthenticated clients. The same algorithm is used client-side for the authenticated privacy-mode toggle, so markers appear at the same fuzzed position in both cases.
@@ -251,6 +253,7 @@ The planner calculates the thermal noise floor as: `−174 dBm + 10·log₁₀(B
 | MEDIUM_SLOW | 10 | 250 | −121 | -15.0 |
 | LONG_FAST | 11 | 250 | −121 | -17.5 |
 | LONG_SLOW | 12 | 125 | −124 | -20.0 |
+| VERY_LONG_SLOW | 12 | 125 | −124 | -20.0 |
 
 ---
 
