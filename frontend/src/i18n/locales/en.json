@@ -28,7 +28,13 @@
     "login": "Login",
     "logout": "Logout",
     "privacy_mode": "Privacy",
-    "language": "Language"
+    "language": "Language",
+    "more": "More",
+    "source_code": "Source code",
+    "toggle_sidebar": "Toggle sidebar",
+    "privacy_on_tooltip": "Privacy mode on — coordinates are fuzzed",
+    "privacy_off_tooltip": "Privacy mode off",
+    "privacy_locked_tooltip": "Privacy mode is locked (public access)"
   },
   "tabs": {
     "nodes": "Nodes",
@@ -133,6 +139,8 @@
     "title": "Activity Feed",
     "no_activity": "No recent activity",
     "empty_help": "Create or update a node to see events here.",
+    "unknown_node": "a node",
+    "unknown_user": "someone",
     "actions": {
       "added": " added ",
       "updated": " updated ",

@@ -167,12 +167,15 @@ function toggleLanguage() {
 }
 
 const activeTab = ref<'nodes' | 'path' | 'activity' | 'jobs'>('nodes')
-const tabs = computed(() => [
-  { id: 'nodes' as const, label: t('tabs.nodes') },
-  { id: 'path' as const, label: t('tabs.path') },
-  { id: 'activity' as const, label: t('tabs.activity') },
-  { id: 'jobs' as const, label: t('tabs.jobs') },
-])
+const tabs = computed(() => {
+  const all = [
+    { id: 'nodes' as const, label: t('tabs.nodes') },
+    { id: 'path' as const, label: t('tabs.path') },
+    { id: 'activity' as const, label: t('tabs.activity') },
+    { id: 'jobs' as const, label: t('tabs.jobs') },
+  ]
+  return authStore.isAuthenticated ? all : all.filter(tab => tab.id !== 'jobs')
+})
 
 const selectedNodeId = ref<string | null>(null)
 const visibleCoverage = ref(new Set<string>())

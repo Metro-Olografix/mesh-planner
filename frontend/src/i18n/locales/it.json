@@ -28,7 +28,13 @@
     "login": "Accedi",
     "logout": "Esci",
     "privacy_mode": "Privacy",
-    "language": "Lingua"
+    "language": "Lingua",
+    "more": "Altro",
+    "source_code": "Codice sorgente",
+    "toggle_sidebar": "Mostra/nascondi pannello",
+    "privacy_on_tooltip": "Modalità privacy attiva — coordinate oscurate",
+    "privacy_off_tooltip": "Modalità privacy disattiva",
+    "privacy_locked_tooltip": "Modalità privacy bloccata (accesso pubblico)"
   },
   "tabs": {
     "nodes": "Nodi",
@@ -133,6 +139,8 @@
     "title": "Feed Attività",
     "no_activity": "Nessuna attività recente",
     "empty_help": "Crea o aggiorna un nodo per vedere gli eventi qui.",
+    "unknown_node": "un nodo",
+    "unknown_user": "qualcuno",
     "actions": {
       "added": " ha aggiunto ",
       "updated": " ha aggiornato ",

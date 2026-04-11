@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -34,6 +35,7 @@ async def sse_stream(request: Request, token: str | None = Query(None)):
             detail="Authentication required",
         )
 
+    authenticated = token is not None
     queue = sse_manager.connect()
     logger.debug("SSE client connected from %s", request.client)
 
@@ -48,6 +50,16 @@ async def sse_stream(request: Request, token: str | None = Query(None)):
                     break
                 try:
                     payload = await asyncio.wait_for(queue.get(), timeout=25.0)
+                    if not authenticated:
+                        try:
+                            msg = json.loads(payload)
+                            if "data" in msg and "name" in msg["data"]:
+                                msg["data"]["name"] = None
+                            if "data" in msg and "by" in msg["data"]:
+                                msg["data"]["by"] = None
+                            payload = json.dumps(msg)
+                        except (json.JSONDecodeError, TypeError):
+                            pass
                     yield f"data: {payload}\n\n"
                 except asyncio.TimeoutError:
                     yield ": keepalive\n\n"
@@ -80,8 +92,8 @@ async def recent_events(
             "type": e.event_type,
             "data": {
                 "id": e.node_id,
-                "name": e.node_name,
-                "by": e.by if user else "someone",
+                "name": e.node_name if user else None,
+                "by": e.by if user else None,
             },
             "timestamp": e.timestamp.isoformat(),
         }

@@ -15,9 +15,9 @@
         <div class="d-flex align-items-center gap-2">
           <span class="activity-icon" :class="iconClass(ev.type)">{{ iconChar(ev.type) }}</span>
           <div style="font-size:.8rem">
-            <strong>{{ ev.data.by }}</strong>
+            <strong>{{ ev.data.by || $t('activity.unknown_user') }}</strong>
             {{ actionText(ev.type) }}
-            <em>{{ ev.data.name }}</em>
+            <em>{{ ev.data.name || $t('activity.unknown_node') }}</em>
           </div>
         </div>
         <div class="text-muted ms-4" style="font-size:.72rem">{{ formatTime(ev.timestamp) }}</div>

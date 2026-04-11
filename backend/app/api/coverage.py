@@ -173,7 +173,7 @@ async def trigger_coverage(
 async def coverage_status(
     node_id: UUID,
     db: AsyncSession = Depends(get_db),
-    user: dict | None = Depends(get_optional_user),
+    user: dict = Depends(get_current_user),
 ):
     node = await _get_node_with_coverage(db, node_id)
     if not node.coverage:
