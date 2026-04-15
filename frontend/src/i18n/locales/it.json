@@ -161,7 +161,8 @@
   },
   "map": {
     "loading_coverage": "Caricamento copertura...",
-    "new_node_here": "Nuovo nodo qui"
+    "new_node_here": "Nuovo nodo qui",
+    "login_to_save": "Accedi per salvare questo nodo"
   },
   "auth": {
     "guest": "Ospite (sola lettura)",

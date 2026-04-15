@@ -33,6 +33,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   nodeClick: [id: string]
   mapClick: [lat: number, lon: number]
+  loginRequest: []
 }>()
 
 const authStore = useAuthStore()
@@ -235,9 +236,27 @@ watch(() => props.ghostPosition, (pos) => {
   }
   if (pos) {
     ghostMarker = L.marker([pos.lat, pos.lon], { icon: ghostIcon })
-    const coordText = uiStore.privacyMode ? '*****' : `${pos.lat.toFixed(5)}, ${pos.lon.toFixed(5)}`
-    ghostMarker.bindPopup(`<strong style="color:#333">${t('map.new_node_here')}</strong><br/><small style="color:#666">${coordText}</small>`)
+    const coordText = `${pos.lat.toFixed(5)}, ${pos.lon.toFixed(5)}`
+    const isGuest = !authStore.isAuthenticated
+    const loginBtn = isGuest
+      ? `<br/><button
+           id="ghost-login-btn"
+           style="margin-top:6px;padding:4px 10px;font-size:.8rem;border:1px solid #0d6efd;
+                  background:#0d6efd;color:#fff;border-radius:4px;cursor:pointer">
+           ${t('map.login_to_save')}
+         </button>`
+      : ''
+    ghostMarker.bindPopup(
+      `<strong style="color:#333">${t('map.new_node_here')}</strong><br/><small style="color:#666">${coordText}</small>${loginBtn}`
+    )
+    if (isGuest) {
+      ghostMarker.on('popupopen', () => {
+        const btn = document.getElementById('ghost-login-btn')
+        btn?.addEventListener('click', () => emit('loginRequest'))
+      })
+    }
     ghostMarker.addTo(map)
+    ghostMarker.openPopup()
   }
 })
 

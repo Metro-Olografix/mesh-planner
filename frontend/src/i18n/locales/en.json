@@ -161,7 +161,8 @@
   },
   "map": {
     "loading_coverage": "Loading coverage...",
-    "new_node_here": "New node here"
+    "new_node_here": "New node here",
+    "login_to_save": "Login to save this node"
   },
   "auth": {
     "guest": "Guest (read-only)",

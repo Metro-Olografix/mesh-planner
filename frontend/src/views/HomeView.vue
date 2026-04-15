@@ -163,6 +163,7 @@
           :ghost-position="ghostPosition"
           @node-click="selectedNodeId = $event"
           @map-click="onMapClick"
+          @login-request="onLoginRequest"
         />
       </main>
     </div>
@@ -270,6 +271,18 @@ watch(
 
 onMounted(async () => {
   await Promise.all([nodesStore.fetchNodes(), nodesStore.fetchHardware()])
+  // Restore position the user picked before the login redirect
+  const raw = sessionStorage.getItem(PENDING_POSITION_KEY)
+  if (raw && authStore.isAuthenticated) {
+    try {
+      const { lat, lon } = JSON.parse(raw)
+      prefillLat.value = lat
+      prefillLon.value = lon
+      ghostPosition.value = { lat, lon }
+      activeTab.value = 'nodes'
+    } catch {}
+    sessionStorage.removeItem(PENDING_POSITION_KEY)
+  }
   // Load persisted activity history before opening the SSE stream
   try {
     const token = await getAccessToken()
@@ -334,8 +347,14 @@ function onNodeSelect(id: string) {
   mapViewRef.value?.centerOn(id)
 }
 
+const PENDING_POSITION_KEY = 'meshplanner_pending_position'
+
 function onMapClick(lat: number, lon: number) {
-  if (authStore.isReadOnly) return
+  if (!authStore.isAuthenticated) {
+    // Show ghost marker with login prompt — position is preserved across login redirect
+    ghostPosition.value = { lat, lon }
+    return
+  }
   if (activeTab.value === 'path' && pathPlannerRef.value?.isPicking()) {
     pathPlannerRef.value.onMapClick(lat, lon)
   } else if (activeTab.value === 'nodes') {
@@ -344,6 +363,14 @@ function onMapClick(lat: number, lon: number) {
     prefillLon.value = lon
     ghostPosition.value = { lat, lon }
   }
+}
+
+function onLoginRequest() {
+  const pos = ghostPosition.value
+  if (pos) {
+    sessionStorage.setItem(PENDING_POSITION_KEY, JSON.stringify(pos))
+  }
+  handleLogin()
 }
 </script>
 
